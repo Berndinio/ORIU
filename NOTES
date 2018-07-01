@@ -1,0 +1,17 @@
+2 METHODEN:
+  - sample ein Bild mit gewissem label ==> ergänze mit generiertem Bild ==> geht bei MNIST
+  - VAE direkt, indem man vorher direkt auf den nicht gecutteten bildern trainiert hat ==> interpoliert
+  - VAE direkt, indem man vorher direkt auf den gecutteten bildern trainiert hat ==> interpoliert
+
+
+
+
+- MNIST trainiert
+- VAE ohne und mit MNIST Input trainiert
+
+- CIFAR10 trainiert
+- VAE ohne und mit CIFAR10 Input trainiert
+- VAE mit MANIPULIERTEN daten trainiert und versucht manipulierte wiederherzustellen
+- VAE mit ORIGINAL      daten trainiert und versucht manipulierte wiederherzustellen
+
+- kein Streifen sondern fenster

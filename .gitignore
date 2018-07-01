@@ -1,2 +1,6 @@
+dataset/*
+!dataset/*.py
+
+
 *.pyc
 saves/*

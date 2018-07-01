@@ -5,7 +5,8 @@ class Constants:
     pDevice = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     #Mode which will be taken for representation of the sampled image.
-    VAERepresentationMode = 0
+    # ==0 means it will take the argmax
+    VAERepresentationMode = 4
 
-    useMNISTInput = True
+    useMNISTInput = False
     useEncoderInput = True

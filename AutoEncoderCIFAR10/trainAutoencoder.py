@@ -34,25 +34,28 @@ transform = transforms.Compose(
     [transforms.ToTensor(),
      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
-trainset = torchvision.datasets.FashionMNIST(root=Constants.savesFolder+'FashionMNIST-data', train=True,
+trainset = torchvision.datasets.CIFAR10(root=Constants.savesFolder+'CIFAR10-data', train=True,
                                         download=True, transform=transform)
 train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size,
                                           shuffle=True, num_workers=4)
 
-testset = torchvision.datasets.FashionMNIST(root=Constants.savesFolder+'FashionMNIST-data', train=False,
+testset = torchvision.datasets.CIFAR10(root=Constants.savesFolder+'CIFAR10-data', train=False,
                                        download=True, transform=transform)
 test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_size,
                                          shuffle=True, num_workers=4)
 
 #load models
-mnistNet = torch.load(Constants.savesFolder+'trainedMNIST-NN.pt')
+mnistNet = torch.load(Constants.savesFolder+'trainedCIFAR10-NN.pt')
 mnistNet = mnistNet.to(Constants.pDevice)
+
 
 dataiter = iter(test_loader)
 images, labels = dataiter.next()
-out = mnistNet(images.to(Constants.pDevice), Constants.VAERepresentationMode)
-
-model = VAE(out)
+mnistOut = mnistNet(images.to(Constants.pDevice), Constants.VAERepresentationMode)
+if Constants.VAERepresentationMode==0:
+    _, mnistOut = torch.max(mnistOut, 1, keepdim=True)
+    mnistOut = mnistOut.type(torch.FloatTensor).to(Constants.pDevice)
+model = VAE(mnistOut)
 model.to(Constants.pDevice)
 optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
@@ -63,11 +66,15 @@ for epoch in range(1, args.epochs + 1):
         import copy
         manipulatedData = copy.deepcopy(data)
         manipulatedData = manipulateData(manipulatedData)
+        dataToTrainAt = data
 
-        mnistOut = mnistNet(manipulatedData, Constants.VAERepresentationMode)
+        mnistOut = mnistNet(dataToTrainAt, Constants.VAERepresentationMode)
+        if Constants.VAERepresentationMode==0:
+            _, mnistOut = torch.max(mnistOut, 1, keepdim=True)
+            mnistOut = mnistOut.type(torch.FloatTensor).to(Constants.pDevice)
 
         optimizer.zero_grad()
-        recon_batch, mu, logvar = model(manipulatedData, mnistOut)
+        recon_batch, mu, logvar = model(dataToTrainAt, mnistOut)
         loss_batch = loss_function(recon_batch, data, mu, logvar)
         loss_batch.backward()
         optimizer.step()
