@@ -1,17 +1,20 @@
 2 METHODEN:
-  - sample ein Bild mit gewissem label ==> ergänze mit generiertem Bild ==> geht bei MNIST
+  - sample ein Bild mit gewissem label ==> ergänze mit generiertem Bild ==> geht bei MNIST && CIFAR10 eher meh....
   - VAE direkt, indem man vorher direkt auf den nicht gecutteten bildern trainiert hat ==> interpoliert
   - VAE direkt, indem man vorher direkt auf den gecutteten bildern trainiert hat ==> interpoliert
 
 
 
 
-- MNIST trainiert
+- MNIST trainiert (FC layer mit labeln)
 - VAE ohne und mit MNIST Input trainiert
 
-- CIFAR10 trainiert
+- CIFAR10 trainiert (2 Netze ==> Full FC UND mit conv und deconv)
 - VAE ohne und mit CIFAR10 Input trainiert
 - VAE mit MANIPULIERTEN daten trainiert und versucht manipulierte wiederherzustellen
 - VAE mit ORIGINAL      daten trainiert und versucht manipulierte wiederherzustellen
+
+- LFW (hat halt keine label, sondern man kann einfach so generieren)
+
 
 - kein Streifen sondern fenster

@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import argparse
 from .model import Net
-from ..constants import Constants
+from ...constants import Constants
 
 parser = argparse.ArgumentParser(description='General parameters')
 parser.add_argument('--batch-size', type=int, default=64, metavar='N',

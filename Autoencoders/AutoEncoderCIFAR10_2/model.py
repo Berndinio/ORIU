@@ -12,7 +12,7 @@ from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
 import numpy as np
 import matplotlib.pyplot as plt
-from ..constants import Constants
+from ...constants import Constants
 
 img_size = 32
 n_c = 3
@@ -61,35 +61,29 @@ class VAE(nn.Module):
     def __init__(self, mnistInput):
         super(VAE, self).__init__()
 
-        self.conv1 = nn.Conv2d(n_c, 3, 2, stride=1)
-        self.conv2 = nn.Conv2d(3, 32, 2, stride=2)
-        self.conv3 = nn.Conv2d(32, 32, 2, stride=1)
-        self.conv4 = nn.Conv2d(32, 32, 2, stride=1)
-
-        self.mu = nn.Linear(5408, 128)
-        self.logvar = nn.Linear(5408, 128)
+        self.fc1 = nn.Linear(img_size * img_size * n_c, 1024)
+        self.fc2 = nn.Linear(1024, 512)
+        self.fc3 = nn.Linear(512, 256)
+        self.mu = nn.Linear(256, 128)
+        self.logvar = nn.Linear(256, 128)
 
         if Constants.useMNISTInput and Constants.useEncoderInput:
-            self.fc1 = nn.Linear(128+mnistInput.shape[1], 128)
+            self.fc4 = nn.Linear(128+mnistInput.shape[1], 256)
         elif Constants.useMNISTInput and not Constants.useEncoderInput:
-            self.fc1 = nn.Linear(mnistInput.shape[1], 128)
+            self.fc4 = nn.Linear(mnistInput.shape[1], 256)
         elif not Constants.useMNISTInput and Constants.useEncoderInput:
-            self.fc1 = nn.Linear(128, 128)
-        self.fc2 = nn.Linear(128, 8192)
-        self.deconv1=nn.ConvTranspose2d(in_channels=32, out_channels=32, kernel_size=2,             padding=0, output_padding=0)
-        self.deconv2=nn.ConvTranspose2d(in_channels=32, out_channels=32, kernel_size=2,             padding=1, output_padding=0)
-        self.deconv3=nn.ConvTranspose2d(in_channels=32, out_channels=32, kernel_size=3, stride=2,   padding=0, output_padding=0)
-        self.deconv4=nn.ConvTranspose2d(in_channels=32, out_channels=3,  kernel_size=2,             padding=1, output_padding=0)
+            self.fc4 = nn.Linear(128, 256)
+        self.fc5 = nn.Linear(256, 512)
+        self.fc6 = nn.Linear(512, 1024)
+        self.fc7 = nn.Linear(1024, img_size * img_size * n_c)
 
         self.relu = nn.ReLU()
         self.tanh = nn.Tanh()
 
     def encode(self, x):
-        h1 = self.relu(self.conv1(x))
-        h1 = self.relu(self.conv2(h1))
-        h1 = self.relu(self.conv3(h1))
-        h1 = self.relu(self.conv4(h1))
-        h1 = h1.view(-1, 5408)
+        h1 = self.relu(self.fc1(x))
+        h1 = self.relu(self.fc2(h1))
+        h1 = self.relu(self.fc3(h1))
         return self.mu(h1), self.logvar(h1)
 
     def reparameterize(self, mu, logvar):
@@ -107,17 +101,12 @@ class VAE(nn.Module):
             z = mnistInput
         elif not Constants.useMNISTInput and Constants.useEncoderInput:
             z = z
-        h3 = self.relu(self.fc1(z))
-        h3 = self.relu(self.fc2(h3))
-        h3 = h3.view(-1, 32, 16, 16)
-        h3 = self.deconv1(h3)
-        h3 = self.deconv2(h3)
-        h3 = self.deconv3(h3)
-        h3 = self.deconv4(h3)
-        return h3
+        h3 = self.relu(self.fc4(z))
+        h3 = self.relu(self.fc5(h3))
+        h3 = self.relu(self.fc6(h3))
+        return self.tanh(self.fc7(h3))
 
     def forward(self, x, mnistInput):
-        mu, logvar = self.encode(x)
+        mu, logvar = self.encode(x.view(-1, img_size * img_size * n_c))
         z = self.reparameterize(mu, logvar)
-        z = self.decode(z, mnistInput)
-        return z.view(-1, 3*32*32), mu, logvar
+        return self.decode(z, mnistInput), mu, logvar

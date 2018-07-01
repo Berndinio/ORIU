@@ -12,7 +12,7 @@ from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
 import numpy as np
 import matplotlib.pyplot as plt
-from ..constants import Constants
+from ...constants import Constants
 
 img_size = 32
 n_c = 3

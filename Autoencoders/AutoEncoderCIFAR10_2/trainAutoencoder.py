@@ -15,7 +15,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from .model import VAE,loss_function, reconstruct_and_generate, manipulateData
-from ..constants import Constants
+from ...constants import Constants
 from ..MNISTnet.model import Net
 
 
@@ -84,4 +84,4 @@ for epoch in range(1, args.epochs + 1):
 
     reconstruct_and_generate(model, mnistNet, epoch, test_loader)
 
-torch.save(model, Constants.savesFolder+'trainedMNIST-AutoEncoder.pt')
+torch.save(model, Constants.savesFolder+'trainedCIFAR10_2-AutoEncoder.pt')

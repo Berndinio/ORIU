@@ -15,8 +15,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from .model import VAE,loss_function, reconstruct_and_generate, manipulateData
-from ..constants import Constants
+from ...constants import Constants
 from ..MNISTnet.model import Net
+from ...dataset.lfwDataset import lfwDataset as LFW
 
 
 parser = argparse.ArgumentParser(description='General parameters')
@@ -31,31 +32,19 @@ parser.add_argument('--lr', type=float, default=1e-3, metavar='LR',
 args = parser.parse_args()
 
 transform = transforms.Compose(
-    [transforms.ToTensor(),
+    [transforms.Resize(32),
+     transforms.ToTensor(),
      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
-trainset = torchvision.datasets.CIFAR10(root=Constants.savesFolder+'CIFAR10-data', train=True,
-                                        download=True, transform=transform)
+trainset = LFW(transform=transform, train=True)
 train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size,
-                                          shuffle=True, num_workers=4)
-
-testset = torchvision.datasets.CIFAR10(root=Constants.savesFolder+'CIFAR10-data', train=False,
-                                       download=True, transform=transform)
-test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_size,
-                                         shuffle=True, num_workers=4)
-
-#load models
-mnistNet = torch.load(Constants.savesFolder+'trainedCIFAR10-NN.pt')
-mnistNet = mnistNet.to(Constants.pDevice)
+                                          shuffle=False, num_workers=4)
+testset = LFW(transform=transform, train=False)
+test_loader = torch.utils.data.DataLoader(testset, batch_size=args.batch_size,
+                                          shuffle=False, num_workers=4)
 
 
-dataiter = iter(test_loader)
-images, labels = dataiter.next()
-mnistOut = mnistNet(images.to(Constants.pDevice), Constants.VAERepresentationMode)
-if Constants.VAERepresentationMode==0:
-    _, mnistOut = torch.max(mnistOut, 1, keepdim=True)
-    mnistOut = mnistOut.type(torch.FloatTensor).to(Constants.pDevice)
-model = VAE(mnistOut)
+model = VAE()
 model.to(Constants.pDevice)
 optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
@@ -66,15 +55,10 @@ for epoch in range(1, args.epochs + 1):
         import copy
         manipulatedData = copy.deepcopy(data)
         manipulatedData = manipulateData(manipulatedData)
-        dataToTrainAt = data
-
-        mnistOut = mnistNet(dataToTrainAt, Constants.VAERepresentationMode)
-        if Constants.VAERepresentationMode==0:
-            _, mnistOut = torch.max(mnistOut, 1, keepdim=True)
-            mnistOut = mnistOut.type(torch.FloatTensor).to(Constants.pDevice)
+        dataToTrainAt = manipulatedData
 
         optimizer.zero_grad()
-        recon_batch, mu, logvar = model(dataToTrainAt, mnistOut)
+        recon_batch, mu, logvar = model(dataToTrainAt)
         loss_batch = loss_function(recon_batch, data, mu, logvar)
         loss_batch.backward()
         optimizer.step()
@@ -82,6 +66,6 @@ for epoch in range(1, args.epochs + 1):
         print('Epoch: {} Iter: {}/{} \tLoss: {}'.format(epoch, i * len(data), len(train_loader.dataset),
         loss_batch.data[0] / len(data)))
 
-    reconstruct_and_generate(model, mnistNet, epoch, test_loader)
+    reconstruct_and_generate(model, epoch, test_loader)
 
-torch.save(model, Constants.savesFolder+'trainedMNIST-AutoEncoder.pt')
+torch.save(model, Constants.savesFolder+'trainedLFW-AutoEncoder.pt')
