@@ -2,7 +2,8 @@ import torch
 
 class Constants:
     savesFolder = "ORIU-project/saves/"
-    pDevice = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    cudaAvailable = torch.cuda.is_available()
+    pDevice = torch.device("cuda" if cudaAvailable else "cpu")
 
     #Mode which will be taken for representation of the sampled image.
     # ==0 means it will take the argmax
@@ -12,4 +13,13 @@ class Constants:
     useEncoderInput = True
 
 
-    KNNIndexMode = 0
+
+    #VGG weights to load
+    weightsFile = "ORIU-project/DFI/vgg19_weights.h5"
+    targetDataGraphicsPath = savesFolder + "KNNresult"
+    targetDataObjectsPath = savesFolder
+
+    KNNIndexMode = 7
+    reconstructionMode = 0
+
+    datasetRootPath = "ORIU-project/dataset/"

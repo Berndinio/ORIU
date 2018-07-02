@@ -2,28 +2,23 @@ import os
 import faiss
 import numpy as np
 from .dfiNetwork import dfiNetwork
-from ...constants import Constants
+from ..constants import Constants
 from PIL import Image
 import os.path
 import torch
 import pickle
 import klepto
 import matplotlib.pyplot as plt
+from ..dataset.lfwDataset import lfwDataset as LFW
+from torchvision import datasets, transforms
 
 
 class Preprocessing:
     def __init__(self, netToLoad="VGG19"):
-        self.net = dfiNetwork()
+        self.net = dfiNetwork(Constants.weightsFile, netToLoad=netToLoad)
 
     #Neg = source set
-    def getKNN(self, listPos, faissPositive, listNeg, faissNegative, imageToManipulate, k=100, save=False, fName="dummy.jpg"):
-        if(save==True):
-            fig=plt.figure(figsize=(12, 20))
-            #plt.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
-            fig.add_subplot(12, 20, 1)
-            plt.imshow(imageToManipulate)
-            plt.title("Source", fontsize=6)
-            plt.axis('off')
+    def getKNN(self, faissPositive, faissNegative, imageToManipulate, k=100):
         #get DFR and NORMALIZE it
         self.net.flushImages()
         self.net.appendImage(imageToManipulate)
@@ -40,33 +35,17 @@ class Preprocessing:
         #load images and get the DFR for reconstruction
         indexPos = indexPos[0]
         indexNeg = indexNeg[0]
+        return indexPos, indexNeg
 
-        if(save==True):
-            for i, (iPos, iNeg) in enumerate(zip(indexPos, indexNeg)):
-                imgPos = Image.open(listPos[iPos])
-                imgNeg = Image.open(listNeg[iNeg])
-                if(save==True):
-                    #positive
-                    fig.add_subplot(12, 20, 21+i)
-                    plt.imshow(imgPos)
-                    plt.title(str(round(distPos[0,i],4)), fontsize=6)
-                    plt.axis('off')
-                    #negative
-                    fig.add_subplot(12, 20, 141+i)
-                    plt.imshow(imgNeg)
-                    plt.title(str(round(distNeg[0,i],4)), fontsize=6)
-                    plt.axis('off')
-            plt.savefig(Constants.targetDataGraphicsPath+"neighborSearch/"+fName, dpi=500)
-        return listPos, indexPos, listNeg, indexNeg
-
-    def getManipulatedVector(self, imageToManipulate, listPos, listNeg, indexPos, indexNeg, factorManipulation=5.0):
+    def getManipulatedVector(self, imageToManipulate, listPos, listNeg, indexPos, indexNeg, datasetPos, datasetNeg, factorManipulation=4.0):
         k = len(indexPos)
         selectedPos = None
         selectedNeg = None
         for i, (iPos, iNeg) in enumerate(zip(indexPos, indexNeg)):
             print(str(i)+"/"+str(k))
-            imgPos = Image.open(listPos[iPos])
-            imgNeg = Image.open(listNeg[iNeg])
+            listPos[iPos]
+            imgPos, _ = datasetPos[listPos[iPos]]
+            imgNeg, _ = datasetNeg[listNeg[iNeg]]
             self.net.appendImage(imgPos)
             self.net.appendImage(imgNeg)
             out = self.net.forwardAll(Constants.reconstructionMode).cpu().data
@@ -92,10 +71,11 @@ class Preprocessing:
         return toManipulate + alpha * (sumPos-sumNeg)
 
 
-    def getFaissFeatures(self, numIterations=1, filePrefix="1dummy", datasetPath=Constants.datasetCelebaAligned, packageSize=10, posNeg=None, saveIt=True):
+    def getFaissFeatures(self, numIterations=1, filePrefix="1dummy", datasetPath=None, packageSize=10, posNeg=None, saveIt=True):
         filePrefix = filePrefix+"-packageSize_"+str(packageSize)
         print("Building Faiss tree on path " + datasetPath + " with numIterations "+str(numIterations)+" and filePrefix "+filePrefix)
         imageBatchSize = 10*2
+        realFileIndex = list(range(len(posNeg)))
 
         #get usual image size
         self.net.flushImages()
@@ -106,13 +86,6 @@ class Preprocessing:
         fileList = []
         vectors = None
         filesNotFound = 0
-
-        if posNeg is None:
-            #just catch ANY feature
-            positive, negative = self.getAttributeSets("No_Beard")
-            posNeg = positive + negative
-            from random import shuffle
-            shuffle(posNeg)
 
         for i in range(numIterations):
             if(i%10==0):
@@ -131,16 +104,15 @@ class Preprocessing:
             lenPosNeg = 0
             while(self.net.imageCounter<imageBatchSize and len(posNeg) > 0):
                 randPosNeg = np.random.randint(len(posNeg),size=1)
-                fName = posNeg[randPosNeg[0]]
+                #append image
+                img, _ = posNeg[randPosNeg[0]]
+                self.net.appendImage(img)
+                #append index
+                realIdx = realFileIndex[randPosNeg[0]]
+                fileList.append(realIdx)
+                lenPosNeg = lenPosNeg + 1
 
-                if(os.path.isfile(datasetPath + fName)):
-                    img = Image.open(datasetPath + fName)
-                    self.net.appendImage(img)
-                    fileList.append(fName)
-                    lenPosNeg = lenPosNeg + 1
-                else:
-                    filesNotFound = filesNotFound + 1
-                    print("File "+fName+" not existent. Already:" + str(filesNotFound))
+                realFileIndex.pop(randPosNeg[0])
                 posNeg.pop(randPosNeg[0])
 
             if(lenPosNeg>0):
@@ -166,19 +138,16 @@ class Preprocessing:
             d.clear()
         return fileList, vectors
 
-    def buildFaissFromFile(self, pFileName, positive, negative, datasetPath, numPacks=1):
+    def buildFaissFromFile(self, pFileName, numPacks=10):
         d = klepto.archives.dir_archive(Constants.targetDataObjectsPath+"faiss/"+pFileName, cached=False, serialized=True, compression=0)
         print(Constants.targetDataObjectsPath+"faiss/"+pFileName)
         import os
-        endListPos = []
-        endListNeg = []
-
+        allIndices = []
         d.load('vectors1')
         vectors = d["vectors1"]
         #now build the faiss index
         #yep, it is dim 0
-        faissPositive = faiss.IndexFlatL2(vectors[0].shape[0])
-        faissNegative = faiss.IndexFlatL2(vectors[0].shape[0])
+        faissP = faiss.IndexFlatL2(vectors[0].shape[0])
 
         numDirs = sum(True for i in os.listdir(Constants.targetDataObjectsPath+"faiss/"+pFileName))
         if numPacks>numDirs/4:
@@ -191,92 +160,59 @@ class Preprocessing:
             d.load('fileList'+str(i))
             print("Loading ended")
 
-            fileList = d["fileList"+str(i)]
+            indices = d["fileList"+str(i)]
             vectors = d["vectors"+str(i)]
-
+            allIndices = allIndices+indices
 
             #get the splitted sets
-            indicesPos, indicesNeg = [], []
-            for idx, fil in enumerate(fileList):
-                if(fil in positive):
-                    indicesPos.append(idx)
-                elif(fil in negative):
-                    indicesNeg.append(idx)
-
-            listPos, vectorsPos, listNeg, vectorsNeg = [fileList[i] for i in indicesPos], vectors[indicesPos].numpy(), [fileList[i] for i in indicesNeg], vectors[indicesNeg].numpy()
+            vectorsNP = vectors.numpy()
             del vectors
 
             #normalize to get cosine similarity
-            normsPos = np.expand_dims(np.linalg.norm(vectorsPos, 2, 1), 1)
-            normalizedPosOutput = vectorsPos/np.broadcast_to(normsPos, vectorsPos.shape)
-            del vectorsPos
-            del normsPos
-            faissPositive.add(normalizedPosOutput)
-            del normalizedPosOutput
+            norms = np.expand_dims(np.linalg.norm(vectorsNP, 2, 1), 1)
+            normalizedOutput = vectorsNP/np.broadcast_to(norms, vectorsNP.shape)
+            del vectorsNP
+            del norms
+            faissP.add(normalizedOutput)
+            del normalizedOutput
+        return allIndices, faissP
 
-            #normalize to get cosine similarity
-            normsNeg = np.expand_dims(np.linalg.norm(vectorsNeg, 2, 1), 1)
-            normalizedNegOutput = vectorsNeg/np.broadcast_to(normsNeg, vectorsNeg.shape)
-            del vectorsNeg
-            del normsNeg
-            faissNegative.add(normalizedNegOutput)
-            del normalizedNegOutput
-
-            endListPos = endListPos + [datasetPath+i for i in listPos]
-            endListNeg = endListNeg + [datasetPath+i for i in listNeg]
-        return endListPos, faissPositive, endListNeg, faissNegative
-
-
-
-    def getAttributeSets(self, attr):
-        attributeFilename = Constants.celebaAttributesFilePath
-        f = open(attributeFilename, 'r')
-        line = f.readline()
-        line = f.readline()
-        attributes = line.split(" ")
-        attrIdx = attributes.index(attr) + 1
-        line = f.readline()
-        # 1 = positive, -1 negative
-        sets = [[],[],[]]
-        while line:
-            features = line[:-1].split(" ")
-            features = list(filter(None, features))
-            sets[int(features[attrIdx])].append(features[0])
-            line = f.readline()
-        return sets[1], sets[-1]
-
-    def filterAttributeSet(self, toFilter, toRemove):
-        newList = [it for it in toFilter if it not in toRemove]
-        return newList
-
-def main():
-    print("\033[94mRunning Preprocessing Test \033[0m")
-    prep = Preprocessing()
-    #test dataset selection
-    positive, negative = prep.getAttributeSets("No_Beard")
-    if(len(positive)+len(negative) != 202599):
-        raise Exception("Preprocessing", "Some data went missing while getting Attribute Sets")
-
-    #test building faiss tree
-    listPos, vectorsPos, listNeg, vectorsNeg = prep.getFaissFeatures_splitted(positive, negative)
-    listPos, vectorsPos, faissPositive, listNeg, vectorsNeg, faissNegative = prep.buildFaissFromFile_splitted("faissTree-epoch_500.faiss")
-    img = Image.open(Constants.datasetCelebaAligned + "023904.jpg")
-    selectedPos, selectedNeg = getKNN(listNeg, faissNegative, listPos, faissPositive, copy.deepcopy(img))
-    manipulated = getManipulatedVector(copy.deepcopy(img), listPos, listNeg, selectedPos, selectedNeg, factorManipulation)
-    print(manipulated, manipulated.shape)
-    print("\033[92mPreprocessing Test Passed \033[0m \n")
 
 if __name__ == '__main__':
-    import copy
-    prep = Preprocessing(netToLoad="OpenFace")
+    transform = transforms.Compose(
+        [transforms.ToTensor(),
+         transforms.ToPILImage()
+         ])
+    trainset = LFW("lfwCropped", transform=transform, train=True)
+    testset = LFW("lfwCropped", transform=transform, train=False)
+    trainset_rectangle = LFW("lfwCroppedRectangle", transform=transform, train=True)
+    testset_rectangle = LFW("lfwCroppedRectangle", transform=transform, train=False)
+    prep = Preprocessing()
 
-    #just catch ANY feature
-    positive, negative = prep.getAttributeSets("No_Beard")
-    pposNeg = positive + negative
-    np.random.seed(42)
-    randoms = np.random.choice(len(pposNeg), size=len(pposNeg), replace=False)
-    pposNeg = np.asarray(pposNeg)[randoms].tolist()
+    if True:
+        imageToManipulate, _ = testset_rectangle[0]
+        imageToManipulate.show()
 
-    Constants.KNNIndexMode = 1
-    name = "OpenFace-AlignmentMode1-IndexMode"+str(Constants.KNNIndexMode)+".faiss"
-    prep.getFaissFeatures(numIterations=99999999, filePrefix=name, datasetPath=Constants.datasetCelebaAlignedEyes, posNeg=copy.deepcopy(pposNeg))
+        name = "IndexMode7-noBox.faiss-packageSize_10.faiss"
+        listPos, faissPos = prep.buildFaissFromFile(name, numPacks=100)
+        name = "IndexMode7-box.faiss-packageSize_10.faiss"
+        listNeg, faissNeg = prep.buildFaissFromFile(name, numPacks=100)
+        indexPos, indexNeg = prep.getKNN(faissPos, faissNeg, imageToManipulate)
+
+        manipulated = prep.getManipulatedVector(imageToManipulate, listPos, listNeg, indexPos, indexNeg, trainset, trainset_rectangle, factorManipulation=15.0)
+
+        #reconstruct
+        reconstructed = prep.net.reconstructImage(manipulated.to(Constants.pDevice), 200, saveIt=False, lam=0.04, LR=1.7)
+        #convert image back to Height,Width,Channels
+        img = np.transpose(reconstructed[-1].numpy(), (1,2,0))
+        img = np.clip(img, 0, 1)
+        #show the image
+        plt.imshow(img)
+        plt.show()
+
+    if False:
+        #no Normalize
+        name = "IndexMode"+str(Constants.KNNIndexMode)+"-noBox.faiss"
+        prep.getFaissFeatures(numIterations=99999999, filePrefix=name, datasetPath=Constants.datasetRootPath+"lfwCropped/", posNeg=trainset)
+        name = "IndexMode"+str(Constants.KNNIndexMode)+"-box.faiss"
+        prep.getFaissFeatures(numIterations=99999999, filePrefix=name, datasetPath=Constants.datasetRootPath+"lfwCroppedRectangle/", posNeg=trainset_rectangle)

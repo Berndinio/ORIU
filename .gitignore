@@ -1,6 +1,6 @@
 dataset/*
 !dataset/*.py
-
+DFI/*h5
 
 *.pyc
 saves/*

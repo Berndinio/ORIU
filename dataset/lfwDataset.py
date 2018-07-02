@@ -44,3 +44,6 @@ class lfwDataset(Dataset):
         if self.transform:
             sample = self.transform(image)
         return sample, 1
+
+    def pop(self, idx):
+        self.files.pop(idx)

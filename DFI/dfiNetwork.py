@@ -11,10 +11,9 @@ import hickle as hkl
 import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
-from .constants import Constants
+from ..constants import Constants
 import h5py
 import sys
-from .utils import Utils
 from .openFace.loadOpenFace import prepareOpenFace
 
 class VGG19Net(nn.ModuleList):
@@ -42,7 +41,6 @@ class VGG19Net(nn.ModuleList):
         weightCounter = 0
 
         for num,i in enumerate(self.cfg['E']):
-
             if type(i) == int or type(i) == tuple:
                 if num<(len(self.cfg['E'])-3):
                     self.layers.append(nn.Conv2d(lastNum, i, 3, padding=1))
@@ -78,7 +76,7 @@ class VGG19Net(nn.ModuleList):
         #print(convOut.shape, flattened.shape)
         if(len(alreadyFlat.data.shape) == 0):
             return flattened
-        return torch.cat((alreadyFlat.cuda(), flattened ), 1)
+        return torch.cat((alreadyFlat.to(Constants.pDevice), flattened ), 1)
 
 
     def forward(self, x, mode=0):
@@ -153,14 +151,14 @@ class VGG19Net(nn.ModuleList):
 
 
 class dfiNetwork:
-    def __init__(self ,pFile=None, pMaxImagesCount= 20, netToLoad="VGG19"):
+    def __init__(self ,pFile=None, pMaxImagesCount= 80, netToLoad="VGG19"):
         print("Beginning to load "+netToLoad)
         self.netType = netToLoad
         self.resize = 0
         if(Constants.cudaAvailable):
             torch.set_default_tensor_type('torch.cuda.FloatTensor')
             if(self.netType=="VGG19" or self.netType==None):
-                self.net = VGG19Net(self.loadWeightsProcess(pFile)).cuda()
+                self.net = VGG19Net(self.loadWeightsProcess(pFile)).to(Constants.pDevice)
                 self.resize = 224
             elif(self.netType=="OpenFace"):
                 self.net = prepareOpenFace(useCuda=True, gpuDevice=0, useMultiGPU=False).eval()
@@ -250,7 +248,7 @@ class dfiNetwork:
 
         """
         if(Constants.cudaAvailable):
-            self.input = Variable(self.images.cuda(), requires_grad=True).cuda()
+            self.input = Variable(self.images.to(Constants.pDevice), requires_grad=True).to(Constants.pDevice)
         else:
             self.input = Variable(self.images, requires_grad=True)
         self.output = self.net(self.input, mode=pMode)
@@ -269,10 +267,12 @@ class dfiNetwork:
             List of weights (weight & bias).
 
         """
+
         if(pfile==None):
             return None
         h5_file = h5py.File(pfile)
         keys = list(h5_file.keys())
+
         endParams = []
         # convert numpy arrays to torch Variables
         for i in range(len(keys)):
@@ -318,11 +318,6 @@ class dfiNetwork:
                 #append image
                 if(i%int(NUM_ITER/20)==0):
                     finalImages.append(self.input[0].cpu().data)
-                #if(Utils.checkKeyBoard("s")):
-                #    Utils.tensorToImage(self.input[0].cpu().data)
-                if((i%10==0 or i==NUM_ITER-1) and saveIt):
-                    fileName = "LR_"+str(LR)+"-lam_"+str(lam)+"-epoch_"+str(i)+"-diffClamp_"+str(diffClamp)+"-gradClamp_"+str(gradClamp)+".jpg"
-                    Utils.tensorToImage(self.input[0].cpu().data, True, Constants.targetDataGraphicsPath+"reconstruction/"+fileName)
                 def closure():
                     optimizer.zero_grad()
                     act_value = self.net(self.input)
@@ -348,76 +343,5 @@ class dfiNetwork:
             print(e)
             return finalImages
 
-def main():
-    print("\033[94mRunning dfiNetwork Test \033[0m")
-    #extract frames
-    from .frameExtractor import frameExtractor
-    from .constants import Constants
-
-    location = Constants.sourceVideoPath
-    target = Constants.targetExtractedFramesPath
-    #extract 20 frames
-    Utils.flushFolder(target)
-    extractor = frameExtractor(location, target)
-    extractor.extractFrames(100)
-
-    #load Network weights
-    sourceFrames = Constants.targetExtractedFramesPath
-    net = dfiNetwork(Constants.weightsFile)
-
-    #append 20 images and forward them
-    for i in range(19):
-        img = Image.open(sourceFrames+"frame"+str(i)+".jpg")
-        net.appendImage(img)
-    for i in range(1):
-        out = net.forwardAll(Constants.iDontCareMode)
-    if(out.data.shape[0] != 19):
-        raise Exception("Output Data is not shape 20")
-    net.appendImage(img)
-    out = net.forwardAll(Constants.iDontCareMode)
-    if(out.data.shape[0] != 20):
-        raise Exception("Output Data is not shape 21")
-
-    #flush images and append another one
-    net.flushImages()
-    net.appendImage(img)
-    out = net.forwardAll(Constants.iDontCareMode)
-
-    if net.input.data.shape[0] != 1:
-        raise Exception("Input Data is not shape 1")
-    if net.output.data.shape[0] != 1:
-        raise Exception("Output Data is not shape 1")
-    net.reconstructImage(out[0],1)
-
-    Utils.flushFolder(target)
-    print("\033[92mDfiNetwork Test Passed \033[0m \n")
-
-
-
 if __name__ == "__main__":
-    #extract frames
-    from .frameExtractor import frameExtractor
-    from .utils import Utils
-    from .constants import Constants
-    #from .dfiNetwork import dfiNetwork
-
-    location = Constants.sourceVideoPath
-    target = Constants.targetExtractedFramesPath
-    #extract 20 frames
-    Utils.flushFolder(target)
-    extractor = frameExtractor(location, target)
-    extractor.extractFrames(100)
-
-    #load Network weights
-    sourceFrames = Constants.targetExtractedFramesPath
-    net = dfiNetwork(Constants.weightsFile)
-
-    #append 1 image and forward them
-    for i in range(1):
-        img = Image.open(sourceFrames+"frame99.jpg")
-        net.appendImage(img)
-    for i in range(1):
-        out = net.forwardAll(Constants.reconstructionMode)
-    print(out.shape)
-    #Utils.tensorToImage(net.input[0].cpu().data)
-    #net.reconstructImage(out[0], int(1000/3*4)*1)
+    pass
