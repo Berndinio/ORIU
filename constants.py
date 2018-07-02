@@ -10,3 +10,6 @@ class Constants:
 
     useMNISTInput = False
     useEncoderInput = True
+
+
+    KNNIndexMode = 0

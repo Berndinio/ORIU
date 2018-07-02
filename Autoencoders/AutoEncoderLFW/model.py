@@ -17,19 +17,16 @@ from ...constants import Constants
 img_size = 32
 n_c = 3
 
-def reconstruct_and_generate(model, epoch, test_loader):
+def reconstruct_and_generate(model, epoch, test_loader, test_loader_rectangle):
     model.eval()
-    for i, (data, _) in enumerate(test_loader):
+    for i, ((data, _),(data_rectangle, _)) in enumerate(zip(test_loader, test_loader_rectangle)):
         batch_size = data.shape[0]
         data = data.to(Constants.pDevice)
         data.volatile=True
-        import copy
-        manipulatedData = copy.deepcopy(data)
-        manipulatedData = manipulateData(manipulatedData)
-        dataToUse = manipulatedData
+        dataToUse = data_rectangle.to(Constants.pDevice)
 
         recon_batch, mu, logvar = model(dataToUse)
-        recon_cpu = torch.cat([manipulatedData[:10], recon_batch.view(batch_size, n_c, img_size, img_size)[:10]])
+        recon_cpu = torch.cat([data_rectangle.cpu()[:10], recon_batch.cpu().view(batch_size, n_c, img_size, img_size)[:10]])
         save_image(recon_cpu.data.cpu(), Constants.savesFolder+'results_Q2/reconstruction_' + str(epoch) + '.png', nrow=10)
         break
 
@@ -39,11 +36,6 @@ def reconstruct_and_generate(model, epoch, test_loader):
     n_samples = 5
     catTensor = torch.cat((data[:10].data.cpu()[:n_samples], sample.data.view(10, n_c, img_size, img_size).cpu()[:n_samples]))
     save_image(catTensor, Constants.savesFolder+'results_Q2/sample_' + str(epoch) + '.png', nrow=5)
-
-
-def manipulateData(data):
-    data[:,:,13:19,13:19] = 0.0
-    return data
 
 def loss_function(recon_x, x, mu, logvar):
     batch_size = logvar.shape[0]

@@ -8,7 +8,7 @@ import numpy as np
 class lfwDataset(Dataset):
     """Face Landmarks dataset."""
 
-    def __init__(self, train=None, transform=None):
+    def __init__(self, directory, train=None, transform=None):
         """
         Args:
             csv_file (string): Path to the csv file with annotations.
@@ -18,7 +18,7 @@ class lfwDataset(Dataset):
         """
         assert (not train is None)
         self.files = []
-        self.root_dir = "/home/berndinio/Schreibtisch/ORIU-project/dataset/lfwCropped/"
+        self.root_dir = "/home/berndinio/Schreibtisch/ORIU-project/dataset/"+directory+"/"
 
         for (dirpath, dirnames, filenames) in walk(self.root_dir):
             for dirP in dirnames:
@@ -27,7 +27,7 @@ class lfwDataset(Dataset):
                         fileP = self.root_dir+str(dirP)+"/"+fileP
                         self.files.append(fileP)
             break
-        self.root_dir = "/home/berndinio/Schreibtisch/ORIU-project/dataset/lfwCropped"
+        self.root_dir = "/home/berndinio/Schreibtisch/ORIU-project/dataset/"+directory+"/"
         self.transform = transform
 
         if(train):
