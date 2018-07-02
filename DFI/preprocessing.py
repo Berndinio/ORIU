@@ -199,7 +199,7 @@ if __name__ == '__main__':
         listNeg, faissNeg = prep.buildFaissFromFile(name, numPacks=100)
         indexPos, indexNeg = prep.getKNN(faissPos, faissNeg, imageToManipulate)
 
-        manipulated = prep.getManipulatedVector(imageToManipulate, listPos, listNeg, indexPos, indexNeg, trainset, trainset_rectangle, factorManipulation=15.0)
+        manipulated = prep.getManipulatedVector(imageToManipulate, listPos, listNeg, indexPos, indexNeg, trainset, trainset_rectangle, factorManipulation=13.0)
 
         #reconstruct
         reconstructed = prep.net.reconstructImage(manipulated.to(Constants.pDevice), 200, saveIt=False, lam=0.04, LR=1.7)
