@@ -10,7 +10,11 @@ import pickle
 import klepto
 import matplotlib.pyplot as plt
 from ..dataset.lfwDataset import lfwDataset as LFW
+from ..dataset.MNISTDataset import MNISTDataset as MNIST
+import torchvision
+
 from torchvision import datasets, transforms
+import argparse
 
 
 class Preprocessing:
@@ -76,7 +80,7 @@ class Preprocessing:
         print("Building Faiss tree on path " + datasetPath + " with numIterations "+str(numIterations)+" and filePrefix "+filePrefix)
         imageBatchSize = 10*2
         realFileIndex = list(range(len(posNeg)))
-
+        print(len(posNeg))
         #get usual image size
         self.net.flushImages()
         self.net.appendImage(Image.open(Constants.datasetRootPath + "dummyImage.jpg"))
@@ -179,40 +183,105 @@ class Preprocessing:
 
 
 if __name__ == '__main__':
-    transform = transforms.Compose(
-        [transforms.ToTensor(),
-         transforms.ToPILImage()
-         ])
-    trainset = LFW("lfwCropped", transform=transform, train=True)
-    testset = LFW("lfwCropped", transform=transform, train=False)
-    trainset_rectangle = LFW("lfwCroppedRectangle", transform=transform, train=True)
-    testset_rectangle = LFW("lfwCroppedRectangle", transform=transform, train=False)
+    parser = argparse.ArgumentParser(description='General parameters')
+    parser.add_argument('--dSet', type=str, default=None,metavar='N',
+                        help='Dataset to take for manipulation')
+    parser.add_argument('--generate', type=bool, default=False, metavar='N',
+                        help='Generate data for task?')
+    args = parser.parse_args()
+    if(args.dSet == "LFW"):
+        transform = transforms.Compose(
+            [transforms.ToTensor(),
+             transforms.ToPILImage()
+             ])
+        trainset = LFW("lfwCropped", transform=transform, train=True)
+        testset = LFW("lfwCropped", transform=transform, train=False)
+        trainset_rectangle = LFW("lfwCroppedRectangle", transform=transform, train=True)
+        testset_rectangle = LFW("lfwCroppedRectangle", transform=transform, train=False)
+    elif(args.dSet == "MNIST"):
+        #additionally make RGB image
+        transform = transforms.Compose(
+            [transforms.ToTensor(),
+             transforms.Lambda(lambda x: x.repeat(3, 1, 1) ),
+             transforms.ToPILImage()
+             ])
+
+        #if needed download and generate the MNIST and MNIST-occluded data
+        if(args.generate):
+            def manipulateDataMNIST(data):
+                data[:,13:19,13:19] = 0.0
+                return data
+            transformOcclusion = transforms.Compose(
+                [transforms.ToTensor(),
+                 transforms.Lambda(manipulateDataMNIST),
+                 transforms.ToPILImage()
+                 ])
+            trainset = torchvision.datasets.MNIST(root=Constants.savesFolder+'MNIST-data', train=True,
+                                                    download=True, transform=transform)
+            testset = torchvision.datasets.MNIST(root=Constants.savesFolder+'MNIST-data', train=False,
+                                                   download=True, transform=transform)
+            trainset_rectangle = torchvision.datasets.MNIST(root=Constants.savesFolder+'MNIST-data', train=True,
+                                                    download=True, transform=transformOcclusion)
+            testset_rectangle = torchvision.datasets.MNIST(root=Constants.savesFolder+'MNIST-data', train=False,
+                                                   download=True, transform=transformOcclusion)
+            #this is a loop for saving the MNIST data to disk
+            overallIdx = 0
+            tTemp = transforms.Compose(
+                [transforms.ToPILImage()
+                 ])
+            for s in [trainset, testset]:
+                for i in range(len(s)):
+                    img, label = s[i]
+                    name = str(overallIdx)+".jpg"
+                    img.save(Constants.datasetRootPath+'MNIST/'+name)
+                    overallIdx += 1
+            overallIdx = 0
+            tTemp = transforms.Compose(
+                [transforms.ToPILImage()
+                 ])
+            for s in [trainset_rectangle, testset_rectangle]:
+                for i in range(len(s)):
+                    img, label = s[i]
+                    name = str(overallIdx)+".jpg"
+                    img.save(Constants.datasetRootPath+'MNIST-occluded/'+name)
+                    overallIdx += 1
+
+        #load the dataset properly
+        trainset = MNIST("MNIST", transform=transform, train=True)
+        testset = MNIST("MNIST", transform=transform, train=False)
+        trainset_rectangle = MNIST("MNIST-occluded", transform=transform, train=True)
+        testset_rectangle = MNIST("MNIST-occluded", transform=transform, train=False)
+
     prep = Preprocessing()
-
-    if True:
-        imageToManipulate, _ = testset_rectangle[0]
-        imageToManipulate.show()
-
-        name = "IndexMode7-noBox.faiss-packageSize_10.faiss"
-        listPos, faissPos = prep.buildFaissFromFile(name, numPacks=100)
-        name = "IndexMode7-box.faiss-packageSize_10.faiss"
-        listNeg, faissNeg = prep.buildFaissFromFile(name, numPacks=100)
-        indexPos, indexNeg = prep.getKNN(faissPos, faissNeg, imageToManipulate)
-
-        manipulated = prep.getManipulatedVector(imageToManipulate, listPos, listNeg, indexPos, indexNeg, trainset, trainset_rectangle, factorManipulation=13.0)
-
-        #reconstruct
-        reconstructed = prep.net.reconstructImage(manipulated.to(Constants.pDevice), 200, saveIt=False, lam=0.04, LR=1.7)
-        #convert image back to Height,Width,Channels
-        img = np.transpose(reconstructed[-1].numpy(), (1,2,0))
-        img = np.clip(img, 0, 1)
-        #show the image
-        plt.imshow(img)
-        plt.show()
-
-    if False:
+    #if needed generate the faiss feature vectors and save them to disk
+    if args.generate:
         #no Normalize
-        name = "IndexMode"+str(Constants.KNNIndexMode)+"-noBox.faiss"
-        prep.getFaissFeatures(numIterations=99999999, filePrefix=name, datasetPath=Constants.datasetRootPath+"lfwCropped/", posNeg=trainset)
-        name = "IndexMode"+str(Constants.KNNIndexMode)+"-box.faiss"
-        prep.getFaissFeatures(numIterations=99999999, filePrefix=name, datasetPath=Constants.datasetRootPath+"lfwCroppedRectangle/", posNeg=trainset_rectangle)
+        name = args.dSet+"-IndexMode"+str(Constants.KNNIndexMode)+"-noBox.faiss"
+        prep.getFaissFeatures(numIterations=15000, filePrefix=name, datasetPath=Constants.datasetRootPath+"MNIST/", posNeg=trainset)
+        name = args.dSet+"-IndexMode"+str(Constants.KNNIndexMode)+"-box.faiss"
+        prep.getFaissFeatures(numIterations=15000, filePrefix=name, datasetPath=Constants.datasetRootPath+"MNIST-occluded/", posNeg=trainset_rectangle)
+
+    #######################################################
+    ##BEGIN DFI
+    #######################################################
+    imageToManipulate, _ = testset_rectangle[0]
+    imageToManipulate.show()
+
+    #load faiss for NN-search
+    name = args.dSet+"-IndexMode7-noBox.faiss-packageSize_10.faiss"
+    listPos, faissPos = prep.buildFaissFromFile(name, numPacks=100)
+    name = args.dSet+"-IndexMode7-box.faiss-packageSize_10.faiss"
+    listNeg, faissNeg = prep.buildFaissFromFile(name, numPacks=100)
+    indexPos, indexNeg = prep.getKNN(faissPos, faissNeg, imageToManipulate)
+
+    #manipulate the DFR
+    manipulated = prep.getManipulatedVector(imageToManipulate, listPos, listNeg, indexPos, indexNeg, trainset, trainset_rectangle, factorManipulation=13.0)
+
+    #reconstruct
+    reconstructed = prep.net.reconstructImage(manipulated.to(Constants.pDevice), 200, saveIt=False, lam=0.04, LR=1.7)
+    #convert image back to Height,Width,Channels
+    img = np.transpose(reconstructed[-1].numpy(), (1,2,0))
+    img = np.clip(img, 0, 1)
+    #show the image
+    plt.imshow(img)
+    plt.show()

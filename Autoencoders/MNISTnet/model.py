@@ -15,6 +15,10 @@ class Net(nn.Module):
         self.fc1 = nn.Linear(320, 50)
         self.fc2 = nn.Linear(50, 10)
 
+    #mode  0 ===> one hot encoded output
+    #mode  1 ===> see below
+    #mode  2 ===> see below
+    #mode>=3 ===> softmax output
     def forward(self, x, mode=0):
         x = F.relu(F.max_pool2d(self.conv1(x), 2))
         x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))

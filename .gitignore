@@ -4,3 +4,4 @@ DFI/*h5
 
 *.pyc
 saves/*
+shape_predictor_68_face_landmarks.dat

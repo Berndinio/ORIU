@@ -60,7 +60,10 @@ for epoch in range(1, args.epochs + 1):
     model.train()
     for i, ((data, _),(data_rectangle, _)) in enumerate(zip(train_loader, train_loader_rectangle)):
         data = data.to(Constants.pDevice)
-        dataToTrainAt = data_rectangle.to(Constants.pDevice)
+        if Constants.useOccludedForTraining:
+            dataToTrainAt = data_rectangle.to(Constants.pDevice)
+        else:
+            dataToTrainAt = data
 
         optimizer.zero_grad()
         recon_batch, mu, logvar = model(dataToTrainAt)

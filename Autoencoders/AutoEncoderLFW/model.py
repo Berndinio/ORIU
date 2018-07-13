@@ -13,30 +13,26 @@ from sklearn.manifold import TSNE
 import numpy as np
 import matplotlib.pyplot as plt
 from ...constants import Constants
-
+import copy
 img_size = 32
 n_c = 3
 
 def reconstruct_and_generate(model, epoch, test_loader, test_loader_rectangle):
     model.eval()
     for i, ((data, _),(data_rectangle, _)) in enumerate(zip(test_loader, test_loader_rectangle)):
-        batch_size = data.shape[0]
-        data = data.to(Constants.pDevice)
-        data.volatile=True
-        dataToUse = data_rectangle.to(Constants.pDevice)
-
-        recon_batch, mu, logvar = model(dataToUse)
-        recon_cpu = torch.cat([data_rectangle.cpu()[:10], recon_batch.cpu().view(batch_size, n_c, img_size, img_size)[:10]])
+        if not Constants.useRandom:
+            dataToUse = data_rectangle.to(Constants.pDevice)[:10]
+            recon_batch, mu, logvar = model(dataToUse)
+            recon_batch = recon_batch.cpu()
+        elif Constants.useRandom:
+            dataToUse = torch.randn(10, 128).float().to(Constants.pDevice)
+            recon_batch = model.decode(dataToUse).cpu()
+        filledData = copy.deepcopy(data_rectangle[:10])
+        filledData[:10,:,11:21,11:21] = recon_batch.view(10, n_c, img_size, img_size)[:10,:,11:21,11:21]
+        recon_cpu = torch.cat([data_rectangle.cpu()[:10], recon_batch.cpu().view(10, n_c, img_size, img_size)])
+        recon_cpu = torch.cat([recon_cpu, filledData])
         save_image(recon_cpu.data.cpu(), Constants.savesFolder+'results_Q2/reconstruction_' + str(epoch) + '.png', nrow=10)
         break
-
-    sample = torch.randn(10, 128)
-    sample = sample.to(Constants.pDevice)
-    sample = model.decode(sample).cpu()
-    n_samples = 5
-    catTensor = torch.cat((data[:10].data.cpu()[:n_samples], sample.data.view(10, n_c, img_size, img_size).cpu()[:n_samples]))
-    save_image(catTensor, Constants.savesFolder+'results_Q2/sample_' + str(epoch) + '.png', nrow=5)
-
 def loss_function(recon_x, x, mu, logvar):
     batch_size = logvar.shape[0]
     MSE = F.mse_loss(recon_x, x.view(-1, img_size * img_size * n_c))
@@ -47,6 +43,7 @@ def loss_function(recon_x, x, mu, logvar):
 class VAE(nn.Module):
     def __init__(self):
         super(VAE, self).__init__()
+        Constants.useMNISTInput = False
 
         self.conv1 = nn.Conv2d(n_c, 3, 2, stride=1)
         self.conv2 = nn.Conv2d(3, 32, 2, stride=2)

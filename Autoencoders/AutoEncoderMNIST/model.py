@@ -20,31 +20,28 @@ n_c = 1
 def reconstruct_and_generate(model, mnistNet, epoch, test_loader):
     model.eval()
     for i, (data, _) in enumerate(test_loader):
-        batch_size = data.shape[0]
         data = data.to(Constants.pDevice)
         data.volatile=True
         import copy
         manipulatedData = copy.deepcopy(data)
         manipulatedData = manipulateData(manipulatedData)
-        dataToUse = manipulatedData
 
-        mnistOut = mnistNet(dataToUse, Constants.VAERepresentationMode)
+        mnistOut = mnistNet(manipulatedData[:10], Constants.VAERepresentationMode)
         if Constants.VAERepresentationMode==0:
             _, mnistOut = torch.max(mnistOut, 1, keepdim=True)
             mnistOut = mnistOut.type(torch.FloatTensor).to(Constants.pDevice)
 
-        recon_batch, mu, logvar = model(dataToUse, mnistOut)
-        recon_cpu = torch.cat([manipulatedData[:10], recon_batch.view(batch_size, n_c, img_size, img_size)[:10]])
+        if not Constants.useRandom:
+            recon_batch, mu, logvar = model(manipulatedData[:10], mnistOut[:10])
+            recon_batch = recon_batch.cpu()
+        elif Constants.useRandom:
+            generatedRandom = torch.randn(10, 64).float().to(Constants.pDevice)
+            recon_batch = model.decode(generatedRandom, mnistOut[:10]).cpu()
+        filledData = copy.deepcopy(manipulatedData[:10])
+        filledData[:10,:,13:19,13:19] = recon_batch.view(10, n_c, img_size, img_size)[:10,:,13:19,13:19]
+        recon_cpu = torch.cat([manipulatedData[:10].cpu(), recon_batch.view(10, n_c, img_size, img_size)[:10]])
+        recon_cpu = torch.cat([recon_cpu, filledData.cpu()])
         save_image(recon_cpu.data.cpu(), Constants.savesFolder+'results_Q2/reconstruction_' + str(epoch) + '.png', nrow=10)
-        break
-
-    sample = torch.randn(10, 64)
-    sample = sample.to(Constants.pDevice)
-    sample = model.decode(sample, mnistOut[:10]).cpu()
-    n_samples = 5
-    catTensor = torch.cat((data[:10].data.cpu()[:n_samples], sample.data.view(10, n_c, img_size, img_size).cpu()[:n_samples]))
-    save_image(catTensor, Constants.savesFolder+'results_Q2/sample_' + str(epoch) + '.png', nrow=5)
-
 
 def manipulateData(data):
     data[:,:,13:19,13:19] = 0.0

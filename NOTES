@@ -18,3 +18,36 @@
 
 
 - kein Streifen sondern fenster
+
+
+
+
+
+
+
+
+
+#HOW TO####################################################
+
+###################VAE#####################################
+IN BOTH ONE CAN USE RANDOM AND NOT RANDOM GENERATION
+IN BOTH ONE COULD USE OCCLUDED AND NOT OCCLUDED IMAGES FOR TRAINING ===> only for LFW available ==> in MNIST one just can improve the classification net output
+
+
+#train MNIST network for class specific generation
+python -m ORIU-project.Autoencoders.MNISTnet.train-MNIST
+
+#start the variational autoencoder for the MNIST data
+python -m ORIU-project.Autoencoders.AutoEncoderMNIST.trainAutoencoder
+==> filled samples are not in ORIU-project/saves/results_Q2/
+==> first row=occluded, second row=generated, third row=filled
+
+#start the variational autoencoder for the LFW data
+python -m ORIU-project.Autoencoders.AutoEncoderLFW.trainAutoencoder
+==> filled samples are not in ORIU-project/saves/results_Q2/
+==> first row=occluded, second row=generated, third row=filled
+
+
+
+##################Stitching#################################
+python -m ORIU-project.Stitching.stitch

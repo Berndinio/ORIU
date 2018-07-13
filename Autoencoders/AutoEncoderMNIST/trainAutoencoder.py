@@ -81,7 +81,5 @@ for epoch in range(1, args.epochs + 1):
 
         print('Epoch: {} Iter: {}/{} \tLoss: {}'.format(epoch, i * len(data), len(train_loader.dataset),
         loss_batch.data[0] / len(data)))
-
     reconstruct_and_generate(model, mnistNet, epoch, test_loader)
-
 torch.save(model, Constants.savesFolder+'trainedMNIST-AutoEncoder.pt')

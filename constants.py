@@ -6,13 +6,20 @@ class Constants:
     pDevice = torch.device("cuda" if cudaAvailable else "cpu")
 
     #Mode which will be taken for representation of the sampled image.
-    # ==0 means it will take the argmax
-    VAERepresentationMode = 4
+    #mode  0 ===> one hot encoded output
+    #mode  1 ===> see Net
+    #mode  2 ===> see Net
+    #mode>=3 ===> softmax output
+    VAERepresentationMode = 3
 
-    useMNISTInput = False
+    useMNISTInput = True
     useEncoderInput = True
 
-
+    #wheter to use random generated samples or exploit the VAE as deep
+    #learning neural net instantly reconstructing the image.
+    useRandom = True
+    #only for LFW dataset available
+    useOccludedForTraining = False
 
     #VGG weights to load
     weightsFile = "ORIU-project/DFI/vgg19_weights.h5"
