@@ -184,7 +184,7 @@ class Preprocessing:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='General parameters')
-    parser.add_argument('--dSet', type=str, default=None,metavar='N',
+    parser.add_argument('--dSet', type=str, default="LFW", metavar='N',
                         help='Dataset to take for manipulation')
     parser.add_argument('--generate', type=bool, default=False, metavar='N',
                         help='Generate data for task?')
@@ -255,11 +255,16 @@ if __name__ == '__main__':
     prep = Preprocessing()
     #if needed generate the faiss feature vectors and save them to disk
     if args.generate:
-        #no Normalize
-        name = args.dSet+"-IndexMode"+str(Constants.KNNIndexMode)+"-noBox.faiss"
-        prep.getFaissFeatures(numIterations=15000, filePrefix=name, datasetPath=Constants.datasetRootPath+"MNIST/", posNeg=trainset)
-        name = args.dSet+"-IndexMode"+str(Constants.KNNIndexMode)+"-box.faiss"
-        prep.getFaissFeatures(numIterations=15000, filePrefix=name, datasetPath=Constants.datasetRootPath+"MNIST-occluded/", posNeg=trainset_rectangle)
+        if(args.dSet == "MNIST"):
+            name = args.dSet+"-IndexMode"+str(Constants.KNNIndexMode)+"-box.faiss"
+            prep.getFaissFeatures(numIterations=20000, filePrefix=name, datasetPath=Constants.datasetRootPath+"MNIST-occluded/", posNeg=trainset_rectangle)
+            name = args.dSet+"-IndexMode"+str(Constants.KNNIndexMode)+"-noBox.faiss"
+            prep.getFaissFeatures(numIterations=20000, filePrefix=name, datasetPath=Constants.datasetRootPath+"MNIST/", posNeg=trainset)
+        if(args.dSet == "LFW"):
+            name = args.dSet+"-IndexMode"+str(Constants.KNNIndexMode)+"-noBox.faiss"
+            prep.getFaissFeatures(numIterations=15000, filePrefix=name, datasetPath=Constants.datasetRootPath+"lfwCropped/", posNeg=trainset)
+            name = args.dSet+"-IndexMode"+str(Constants.KNNIndexMode)+"-box.faiss"
+            prep.getFaissFeatures(numIterations=15000, filePrefix=name, datasetPath=Constants.datasetRootPath+"lfwCroppedRectangle/", posNeg=trainset_rectangle)
 
     #######################################################
     ##BEGIN DFI

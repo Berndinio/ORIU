@@ -51,3 +51,8 @@ python -m ORIU-project.Autoencoders.AutoEncoderLFW.trainAutoencoder
 
 ##################Stitching#################################
 python -m ORIU-project.Stitching.stitch
+
+
+
+##################DFI#################################
+python -m ORIU-project.DFI.preprocessing
