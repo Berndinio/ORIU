@@ -44,7 +44,7 @@ class Stitching:
              transforms.ToPILImage()
              ])
 
-        if(self.dSet == "LFw"):
+        if(self.dSet == "LFW"):
             #get data
             trainset = LFW("lfwCropped", transform=transform, train=True)
             testset = LFW("lfwCropped", transform=transform, train=False)
@@ -57,6 +57,13 @@ class Stitching:
             name = "LFW-IndexMode7-box.faiss-packageSize_10.faiss"
             listNeg, faissNeg = self.preprocessing.buildFaissFromFile(name, numPacks=100)
         else:
+            #additionally make RGB image
+            transform = transforms.Compose(
+                [transforms.ToTensor(),
+                 transforms.Lambda(lambda x: x.repeat(3, 1, 1) ),
+                 transforms.ToPILImage()
+                 ])
+
             #load the dataset properly
             trainset = MNIST("MNIST", transform=transform, train=True)
             testset = MNIST("MNIST", transform=transform, train=False)
@@ -64,28 +71,19 @@ class Stitching:
             testset_rectangle = MNIST("MNIST-occluded", transform=transform, train=False)
 
             #find nearest neighbors by FAISS Index
-            name = "MNIST-IndexMode7-noBox.faiss-packageSize_10.faiss"
+            name = "MNIST_old-IndexMode7-noBox.faiss-packageSize_10.faiss"
             listPos, faissPos = self.preprocessing.buildFaissFromFile(name, numPacks=100)
-            name = "MNIST-IndexMode7-box.faiss-packageSize_10.faiss"
+            name = "MNIST_old-IndexMode7-box.faiss-packageSize_10.faiss"
             listNeg, faissNeg = self.preprocessing.buildFaissFromFile(name, numPacks=100)
 
         for x in range(100):
             if(self.dSet == "MNIST"):
-                #additionally make RGB image
-                transform = transforms.Compose(
-                    [transforms.ToTensor(),
-                     transforms.Lambda(lambda x: x.repeat(3, 1, 1) ),
-                     transforms.ToPILImage()
-                     ])
-
                 print("Datasetindex: "+str(x))
-                imageToManipulateT, _ = trainset_rectangle[x]
-                imageToManipulate = transform(imageToManipulateT)
+                imageToManipulate, _ = trainset_rectangle[x]
                 #just the numpy version of the imageToManipulate
                 targetImage = np.array(imageToManipulate)
-                print(targetImage.shape)
                 #find NN
-                indexPos, indexNeg = self.preprocessing.getKNN(faissPos, faissNeg, imageToManipulate, k=1000)
+                indexPos, indexNeg = self.preprocessing.getKNN(faissPos, faissNeg, imageToManipulate, k=100)
                 box = [(13,13), (19, 19)]
                 distance = 9999999999999
                 idx = None
@@ -94,11 +92,10 @@ class Stitching:
                     print(str(i)+"/"+str(len(indexPos)))
                     dSetIdx = listPos[neighborIdx]
                     img, _ = trainset[dSetIdx]
-                    imageToManipulate = transform(imageToManipulate)
 
                     #compute smoothening/pixel loss
                     npImg = np.array(img)
-                    npImg[box[0][0]:box[1][0], box[0][1]:box[1][1]] = 0.0
+                    npImg[box[0][0]:box[1][0], box[0][1]:box[1][1], :] = 0.0
                     pixelLoss = np.linalg.norm(targetImage - npImg)
 
                     distance_temp += pixelLoss
@@ -107,6 +104,8 @@ class Stitching:
                         idx = dSetIdx
                 img, _ = trainset[dSetIdx]
                 optimalImage = np.array(img)
+                print(targetImage.shape, npImg.shape, optimalImage.shape, imageToManipulate)
+
                 targetImage[box[0][0]:box[1][0], box[0][1]:box[1][1], :] = optimalImage[box[0][0]:box[1][0], box[0][1]:box[1][1], :]
 
                 #show some things
@@ -115,11 +114,11 @@ class Stitching:
                 plt.clf()
                 plt.figure(1)
                 plt.subplot(131)
-                plt.imshow(imageToManipulateT)
+                plt.imshow(np.array(imageToManipulate))
                 plt.subplot(132)
                 plt.imshow(optimalImage)
                 plt.subplot(133)
-                plt.imshow(finalImage)
+                plt.imshow(targetImage)
                 plt.show()
 
 

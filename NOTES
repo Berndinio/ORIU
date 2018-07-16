@@ -50,9 +50,10 @@ python -m ORIU-project.Autoencoders.AutoEncoderLFW.trainAutoencoder
 
 
 ##################Stitching#################################
-python -m ORIU-project.Stitching.stitch
-
-
+python -m ORIU-project.Stitching.stitch --dSet LFW
+python -m ORIU-project.Stitching.stitch --dSet MNIST
 
 ##################DFI#################################
-python -m ORIU-project.DFI.preprocessing
+python -m ORIU-project.DFI.preprocessing --dSet LFW
+python -m ORIU-project.DFI.preprocessing --dSet MNIST_old
+python -m ORIU-project.DFI.preprocessing --dSet MNIST

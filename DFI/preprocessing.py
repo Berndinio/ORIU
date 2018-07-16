@@ -41,7 +41,7 @@ class Preprocessing:
         indexNeg = indexNeg[0]
         return indexPos, indexNeg
 
-    def getManipulatedVector(self, imageToManipulate, listPos, listNeg, indexPos, indexNeg, datasetPos, datasetNeg, factorManipulation=4.0):
+    def getManipulatedVector(self, imageToManipulate, listPos, listNeg, indexPos, indexNeg, datasetPos, datasetNeg, factorManipulation=4.0, grayscale=False):
         k = len(indexPos)
         selectedPos = None
         selectedNeg = None
@@ -75,15 +75,17 @@ class Preprocessing:
         return toManipulate + alpha * (sumPos-sumNeg)
 
 
-    def getFaissFeatures(self, numIterations=1, filePrefix="1dummy", datasetPath=None, packageSize=10, posNeg=None, saveIt=True):
+    def getFaissFeatures(self, numIterations=1, filePrefix="1dummy", datasetPath=None, packageSize=10, posNeg=None, saveIt=True, grayscale=False):
         filePrefix = filePrefix+"-packageSize_"+str(packageSize)
         print("Building Faiss tree on path " + datasetPath + " with numIterations "+str(numIterations)+" and filePrefix "+filePrefix)
         imageBatchSize = 10*2
         realFileIndex = list(range(len(posNeg)))
-        print(len(posNeg))
         #get usual image size
         self.net.flushImages()
-        self.net.appendImage(Image.open(Constants.datasetRootPath + "dummyImage.jpg"))
+        if(grayscale):
+            self.net.appendImage(Image.open(Constants.datasetRootPath + "dummyImage.jpg").convert('L'))
+        else:
+            self.net.appendImage(Image.open(Constants.datasetRootPath + "dummyImage.jpg"))
         output = self.net.forwardAll(Constants.KNNIndexMode)
         self.net.flushImages()
 
@@ -187,7 +189,9 @@ if __name__ == '__main__':
     parser.add_argument('--dSet', type=str, default="LFW", metavar='N',
                         help='Dataset to take for manipulation')
     parser.add_argument('--generate', type=bool, default=False, metavar='N',
-                        help='Generate data for task?')
+                        help='Generate feature vector data for task?')
+    parser.add_argument('--generateOccluded', type=bool, default=False, metavar='N',
+                        help='Generate occluded image data for task?')
     args = parser.parse_args()
     if(args.dSet == "LFW"):
         transform = transforms.Compose(
@@ -198,37 +202,53 @@ if __name__ == '__main__':
         testset = LFW("lfwCropped", transform=transform, train=False)
         trainset_rectangle = LFW("lfwCroppedRectangle", transform=transform, train=True)
         testset_rectangle = LFW("lfwCroppedRectangle", transform=transform, train=False)
-    elif(args.dSet == "MNIST"):
+        #makes difference in "MNIST" dataset. Here it is just a pun
+        trainset_RGB, testset_RGB, trainset_rectangle_RGB, testset_rectangle_RGB = trainset, testset, trainset_rectangle, testset_rectangle
+
+    elif(args.dSet == "MNIST_old" or args.dSet == "MNIST"):
+        ###################
+        ##All the transforms
+        ###################
+        transform_MNIST = transforms.Compose(
+            [transforms.ToTensor(),
+             transforms.ToPILImage(),
+             transforms.Grayscale()
+             ])
         #additionally make RGB image
-        transform = transforms.Compose(
+        transform_MNIST_old = transforms.Compose(
             [transforms.ToTensor(),
              transforms.Lambda(lambda x: x.repeat(3, 1, 1) ),
              transforms.ToPILImage()
              ])
+        #for occlusion
+        def manipulateDataMNIST(data):
+            data[:,13:19,13:19] = 0.0
+            return data
+        transformOcclusion = transforms.Compose(
+            [transforms.ToTensor(),
+             transforms.Lambda(manipulateDataMNIST),
+             transforms.ToPILImage(),
+             transforms.Grayscale()
+             ])
+        #for saving to disc
+        tTemp = transforms.Compose(
+            [transforms.ToPILImage(),
+             transforms.Grayscale()
+             ])
+
 
         #if needed download and generate the MNIST and MNIST-occluded data
-        if(args.generate):
-            def manipulateDataMNIST(data):
-                data[:,13:19,13:19] = 0.0
-                return data
-            transformOcclusion = transforms.Compose(
-                [transforms.ToTensor(),
-                 transforms.Lambda(manipulateDataMNIST),
-                 transforms.ToPILImage()
-                 ])
+        if(args.generateOccluded):
             trainset = torchvision.datasets.MNIST(root=Constants.savesFolder+'MNIST-data', train=True,
-                                                    download=True, transform=transform)
+                                                    download=True, transform=transform_MNIST)
             testset = torchvision.datasets.MNIST(root=Constants.savesFolder+'MNIST-data', train=False,
-                                                   download=True, transform=transform)
+                                                   download=True, transform=transform_MNIST)
             trainset_rectangle = torchvision.datasets.MNIST(root=Constants.savesFolder+'MNIST-data', train=True,
                                                     download=True, transform=transformOcclusion)
             testset_rectangle = torchvision.datasets.MNIST(root=Constants.savesFolder+'MNIST-data', train=False,
                                                    download=True, transform=transformOcclusion)
             #this is a loop for saving the MNIST data to disk
             overallIdx = 0
-            tTemp = transforms.Compose(
-                [transforms.ToPILImage()
-                 ])
             for s in [trainset, testset]:
                 for i in range(len(s)):
                     img, label = s[i]
@@ -236,9 +256,6 @@ if __name__ == '__main__':
                     img.save(Constants.datasetRootPath+'MNIST/'+name)
                     overallIdx += 1
             overallIdx = 0
-            tTemp = transforms.Compose(
-                [transforms.ToPILImage()
-                 ])
             for s in [trainset_rectangle, testset_rectangle]:
                 for i in range(len(s)):
                     img, label = s[i]
@@ -246,44 +263,77 @@ if __name__ == '__main__':
                     img.save(Constants.datasetRootPath+'MNIST-occluded/'+name)
                     overallIdx += 1
 
-        #load the dataset properly
-        trainset = MNIST("MNIST", transform=transform, train=True)
-        testset = MNIST("MNIST", transform=transform, train=False)
-        trainset_rectangle = MNIST("MNIST-occluded", transform=transform, train=True)
-        testset_rectangle = MNIST("MNIST-occluded", transform=transform, train=False)
+        #load datasets after generating
+        if args.dSet=="MNIST_old":
+            #load the dataset properly
+            trainset = MNIST("MNIST", transform=transform_MNIST_old, train=True)
+            testset = MNIST("MNIST", transform=transform_MNIST_old, train=False)
+            trainset_rectangle = MNIST("MNIST-occluded", transform=transform_MNIST_old, train=True)
+            testset_rectangle = MNIST("MNIST-occluded", transform=transform_MNIST_old, train=False)
+            #makes difference in "MNIST" dataset. Here it is just a pun
+            trainset_RGB, testset_RGB, trainset_rectangle_RGB, testset_rectangle_RGB = trainset, testset, trainset_rectangle, testset_rectangle
 
-    prep = Preprocessing()
+        elif args.dSet=="MNIST":
+            #load the dataset properly
+            trainset = MNIST("MNIST", transform=transform_MNIST, train=True)
+            testset = MNIST("MNIST", transform=transform_MNIST, train=False)
+            trainset_rectangle = MNIST("MNIST-occluded", transform=transform_MNIST, train=True)
+            testset_rectangle = MNIST("MNIST-occluded", transform=transform_MNIST, train=False)
+            trainset_RGB = MNIST("MNIST", transform=transform_MNIST_old, train=True)
+            testset_RGB = MNIST("MNIST", transform=transform_MNIST_old, train=False)
+            trainset_rectangle_RGB = MNIST("MNIST-occluded", transform=transform_MNIST_old, train=True)
+            testset_rectangle_RGB = MNIST("MNIST-occluded", transform=transform_MNIST_old, train=False)
+
+    #load proper networks
+    if(args.dSet == "MNIST"):
+        prepKNN = Preprocessing("MNISTNet")
+    if(args.dSet == "MNIST_old"):
+        prepKNN = Preprocessing()
+    if(args.dSet == "LFW"):
+        prepKNN = Preprocessing()
+    prepRecon = Preprocessing()
     #if needed generate the faiss feature vectors and save them to disk
+
     if args.generate:
         if(args.dSet == "MNIST"):
             name = args.dSet+"-IndexMode"+str(Constants.KNNIndexMode)+"-box.faiss"
-            prep.getFaissFeatures(numIterations=20000, filePrefix=name, datasetPath=Constants.datasetRootPath+"MNIST-occluded/", posNeg=trainset_rectangle)
+            prepKNN.getFaissFeatures(numIterations=1000, filePrefix=name, datasetPath=Constants.datasetRootPath+"MNIST-occluded/", posNeg=trainset_rectangle, grayscale=True)
             name = args.dSet+"-IndexMode"+str(Constants.KNNIndexMode)+"-noBox.faiss"
-            prep.getFaissFeatures(numIterations=20000, filePrefix=name, datasetPath=Constants.datasetRootPath+"MNIST/", posNeg=trainset)
+            prepKNN.getFaissFeatures(numIterations=1000, filePrefix=name, datasetPath=Constants.datasetRootPath+"MNIST/", posNeg=trainset, grayscale=True)
+        if(args.dSet == "MNIST_old"):
+            name = args.dSet+"-IndexMode"+str(Constants.KNNIndexMode)+"-box.faiss"
+            prepKNN.getFaissFeatures(numIterations=1000, filePrefix=name, datasetPath=Constants.datasetRootPath+"MNIST-occluded/", posNeg=trainset_rectangle)
+            name = args.dSet+"-IndexMode"+str(Constants.KNNIndexMode)+"-noBox.faiss"
+            prepKNN.getFaissFeatures(numIterations=1000, filePrefix=name, datasetPath=Constants.datasetRootPath+"MNIST/", posNeg=trainset)
         if(args.dSet == "LFW"):
             name = args.dSet+"-IndexMode"+str(Constants.KNNIndexMode)+"-noBox.faiss"
-            prep.getFaissFeatures(numIterations=15000, filePrefix=name, datasetPath=Constants.datasetRootPath+"lfwCropped/", posNeg=trainset)
+            prepKNN.getFaissFeatures(numIterations=15000, filePrefix=name, datasetPath=Constants.datasetRootPath+"lfwCropped/", posNeg=trainset)
             name = args.dSet+"-IndexMode"+str(Constants.KNNIndexMode)+"-box.faiss"
-            prep.getFaissFeatures(numIterations=15000, filePrefix=name, datasetPath=Constants.datasetRootPath+"lfwCroppedRectangle/", posNeg=trainset_rectangle)
+            prepKNN.getFaissFeatures(numIterations=15000, filePrefix=name, datasetPath=Constants.datasetRootPath+"lfwCroppedRectangle/", posNeg=trainset_rectangle)
 
     #######################################################
     ##BEGIN DFI
     #######################################################
-    imageToManipulate, _ = testset_rectangle[0]
+    dsetIdx = 1
+    imageToManipulate, _ = testset_rectangle[dsetIdx]
+    imageToManipulate_RGB, _ = testset_rectangle_RGB[dsetIdx]
     imageToManipulate.show()
 
     #load faiss for NN-search
     name = args.dSet+"-IndexMode7-noBox.faiss-packageSize_10.faiss"
-    listPos, faissPos = prep.buildFaissFromFile(name, numPacks=100)
+    listPos, faissPos = prepKNN.buildFaissFromFile(name, numPacks=100)
     name = args.dSet+"-IndexMode7-box.faiss-packageSize_10.faiss"
-    listNeg, faissNeg = prep.buildFaissFromFile(name, numPacks=100)
-    indexPos, indexNeg = prep.getKNN(faissPos, faissNeg, imageToManipulate)
+    listNeg, faissNeg = prepKNN.buildFaissFromFile(name, numPacks=100)
+    indexPos, indexNeg = prepKNN.getKNN(faissPos, faissNeg, imageToManipulate)
 
     #manipulate the DFR
-    manipulated = prep.getManipulatedVector(imageToManipulate, listPos, listNeg, indexPos, indexNeg, trainset, trainset_rectangle, factorManipulation=13.0)
+    if(args.dSet == "LFW"):
+        manipulated = prepRecon.getManipulatedVector(imageToManipulate, listPos, listNeg, indexPos, indexNeg, trainset, trainset_rectangle, factorManipulation=13.0)
+    else:
+        manipulated = prepRecon.getManipulatedVector(imageToManipulate_RGB, listPos, listNeg, indexPos, indexNeg, trainset_RGB, trainset_rectangle_RGB, factorManipulation=5.0)
 
     #reconstruct
-    reconstructed = prep.net.reconstructImage(manipulated.to(Constants.pDevice), 200, saveIt=False, lam=0.04, LR=1.7)
+    reconstructed = prepRecon.net.reconstructImage(manipulated.to(Constants.pDevice), 200, saveIt=False, lam=0.04, LR=1.7)
     #convert image back to Height,Width,Channels
     img = np.transpose(reconstructed[-1].numpy(), (1,2,0))
     img = np.clip(img, 0, 1)

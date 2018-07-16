@@ -10,14 +10,14 @@ class Constants:
     #mode  1 ===> see Net
     #mode  2 ===> see Net
     #mode>=3 ===> softmax output
-    VAERepresentationMode = 3
+    VAERepresentationMode = 2
 
-    useMNISTInput = True
+    useMNISTInput = False
     useEncoderInput = True
 
     #wheter to use random generated samples or exploit the VAE as deep
     #learning neural net instantly reconstructing the image.
-    useRandom = True
+    useRandom = False
     #only for LFW dataset available
     useOccludedForTraining = False
 

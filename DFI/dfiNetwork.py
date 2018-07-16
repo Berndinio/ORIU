@@ -15,6 +15,7 @@ from ..constants import Constants
 import h5py
 import sys
 from .openFace.loadOpenFace import prepareOpenFace
+from ..Autoencoders.MNISTnet.model import Net as MNISTNet
 
 class VGG19Net(nn.ModuleList):
     def __init__(self, weightsToLoad=None):
@@ -155,6 +156,7 @@ class dfiNetwork:
         print("Beginning to load "+netToLoad)
         self.netType = netToLoad
         self.resize = 0
+        #this if else is from pytorch version<4.0
         if(Constants.cudaAvailable):
             torch.set_default_tensor_type('torch.cuda.FloatTensor')
             if(self.netType=="VGG19" or self.netType==None):
@@ -163,6 +165,9 @@ class dfiNetwork:
             elif(self.netType=="OpenFace"):
                 self.net = prepareOpenFace(useCuda=True, gpuDevice=0, useMultiGPU=False).eval()
                 self.resize = 96
+            elif(self.netType=="MNISTNet"):
+                self.net = torch.load(Constants.savesFolder+"pretrainedMNIST-NN.pt").to(Constants.pDevice)
+                self.resize = 28
         else:
             torch.set_default_tensor_type('torch.FloatTensor')
             if(self.netType=="VGG19" or self.netType==None):
@@ -171,6 +176,10 @@ class dfiNetwork:
             elif(self.netType=="OpenFace"):
                 self.net = prepareOpenFace(useCuda=False, gpuDevice=0, useMultiGPU=False).eval()
                 self.resize = 96
+            elif(self.netType=="MNISTNet"):
+                self.net = torch.load(Constants.savesFolder+"pretrainedMNIST-NN.pt")
+                self.resize = 28
+
 
         self.trans = transforms.Compose([
             transforms.Resize((224,224)),
@@ -217,7 +226,6 @@ class dfiNetwork:
             The image to append into que.
         """
         img = self.trans(image).unsqueeze_(0)
-
         if(self.imageCounter == 0):
             self.images = img
         else:
