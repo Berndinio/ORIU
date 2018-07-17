@@ -425,12 +425,178 @@ This makes the final loss look like the following
   Loss = \frac{1}{2} ||\sigma_{toReconstruct} - \sigma_{black}||_2^2 + \lambda R_V
 \end{align*}
 where $\lambda$ is an image smoothening factor and $\beta = 0.4$ like before.
+
+
+
+
+
+
 \section{Experiments and Results}
 \subsection{Datasets}
+In this project three datasets were used.
+\begin{itemize}
+  \item MNIST \\
+  A handrwitten digit dataset. The digits are normalized, mostly center and transformed into grayscale.
+  The image size is 28x28 and the dataset has ten classes (= one for each digit). In this dataset 60.000 training and 10.000 are available.
+  \item Labeled faces in the wild (=LFW)\\
+  LFW is a face dataset with aligned faces. They are labeled with the person they are displaying, which is more or less unimportant for this work. The dataset is just treated unlabeled. The dataset contains 13233 images.
+  \item CIFAR 10
+  The CIFAR 10 dataset is dataset contain 10 classe. The 10 classes are: airplane, automobile, bird, cat, deer, dog, frog, horse, ship, truck. The dataset contains 50000 training images and 10000 test images, which are of size 32x32 in RGB mode.
+\end{itemize}
+
+\subsection{Structures of networks}
+Due to many networks are used, here the network architectures are introduced.
+\subsubsection{MNIST classification network}
+\begin{figure}[H]
+  \begin{center}
+    \includegraphics[width=0.5\textwidth]{images/mnist_convet.png}
+    \caption{A convolutional neural network to classify MNIST digits.}
+  \end{center}
+\end{figure}
+\subsubsection{VAE on MNIST}
+Here one uses only FC layers.
+The layer structure is
+\begin{itemize}
+  \item Vectorized image (image width * image height * number of channels)
+  \item 512 neruons
+  \item 256 neruons
+  \item 64 neruons for variance and 64 for mean.
+  \item Reparametrization + MNIST as additional input for the decoder.
+  \item 256 neruons
+  \item 512 neruons
+  \item Reshaped to image (image width * image height * number of channels)
+\end{itemize}
+
+\subsubsection{VAE on labeled faces in the wild}
+\begin{figure}[H]
+  \begin{center}
+    \includegraphics[width=0.5\textwidth]{images/cifar10_encoder.png}
+    \caption{The encoder of the VAE for the LFW dataset.}
+  \end{center}
+\end{figure}
+\begin{figure}[H]
+  \begin{center}
+    \includegraphics[width=0.5\textwidth]{images/cifar10_decoder.png}
+    \caption{The decoder of the VAE for the LFW dataset.}
+  \end{center}
+\end{figure}
+
+\subsubsection{VGG-19}
+\begin{figure}[H]
+  \begin{center}
+    \includegraphics[width=0.5\textwidth]{images/VGG19-orig.png}
+    \caption{The VGG-19 network.}
+  \end{center}
+\end{figure}
+
 \subsection{Image Stitching}
+Image stitching is the simplest method. There were not many parameters to adjust. It was just finding the best nearest neighbor and cut \& paste the missing parts.
+Still there were different methods tried out from the beginning to find the nearest neighbors.
+\begin{itemize}
+  \item Nearest neighbor search with faiss index with \textbf{one} result. Stitching without finding the transformation for facial landmarks between two images.
+  \item Nearest neighbor search with faiss index with \textbf{100} result images.
+  Finding \textbf{one} nearest neighbor out of the 100 with pixel loss around the occluded part. Stitching \textbf{without} finding the transformation for facial landmarks between two images.
+  \item Nearest neighbor search with faiss index with \textbf{100} result images.
+  Finding \textbf{one} nearest neighbor out of the 100 with pixel loss around the occluded part. Stitching \textbf{with} finding the transformation for facial landmarks between two images.
+\end{itemize}
+Pixel loss is done as described in the above sections. \\
+For the feature vectors for the NN search one needs to differ between the datasets.
+\begin{itemize}
+  \item MNIST
+  \begin{itemize}
+    \item VGG-19 pretrained on ILSVRC $\implies$ output of the first FC layer.
+    \item Pretrained MNIST classification network from above $\implies$ output of last softmax layer (=used for foinal results).
+  \end{itemize}
+  \item LFW
+  \begin{itemize}
+    \item VGG-19 pretrained on ILSVRC $\implies$ output of the first FC layer.
+  \end{itemize}
+\end{itemize}
+The final results (=third method from above) are the following:
+  \begin{figure}[H]
+    \begin{center}
+      \includegraphics[width=0.8\textwidth]{images/stitching_final2.png}
+      \caption{Results for image stitching on LFW and MNIST}
+    \end{center}
+  \end{figure}
+
+
 \subsection{Variational Autoencoder}
+The VAE method has the most parameters.
+\begin{itemize}
+  \item The additional input for the decoder. Here one can use which layer of the classification network should be injected into the intermediate representation of the VAE. \textbf{This is only available for the MNIST dataset!}
+  \item Use random generation of the VAE or not. Here one can chose if samples should be generated and then stitched into the image or the network just acts as a normal deep learning structure reconstructing the occluded parts directly.
+  \item Use the occluded images to train the VAE or not.
+\end{itemize}
+The results for the MNIST are:
+\begin{figure}[H]
+  \begin{center}
+    \includegraphics[width=0.8\textwidth]{presentation_results/VAE/MNIST-VAE-useRandom_false-useMNIST_true-VAERepresentation_3-useOccludedForTrain_false.png}
+    \caption{Additional input used (softmax output). Did not use random generation (=just deep learning). Used not occluded images for training. First row = occluded image, second row=generated, third row=completed image.}
+  \end{center}
+\end{figure}
+\begin{figure}[H]
+  \begin{center}
+    \includegraphics[width=0.8\textwidth]{presentation_results/VAE/MNIST-VAE-useRandom_true-useMNIST_true-VAERepresentation_1-useOccludedForTrain_false.png}
+    \caption{Additional input used (flattened vector of last convolutional output). Did not use random generation (=just deep learning). Used not occluded images for training. First row = occluded image, second row=generated, third row=completed image.}
+  \end{center}
+\end{figure}
+One can clearly see, that the preciser/bigger the additional input from the MNIST network gets, the results get better. This is normal due to the encoder relies more and more on the MNIST classification output. \\
+Due to this is still just a forward pass (=just deep learning), let's analyse the \textbf{random generation} image completion. Here images are generated and stitched.
+\begin{figure}[H]
+  \begin{center}
+    \includegraphics[width=0.8\textwidth]{presentation_results/VAE/MNIST-VAE-useRandom_true-useMNIST_true-VAERepresentation_1-useOccludedForTrain_false.png}
+    \caption{Additional input used (flattened vector of last convolutional output). Did use random generation (=just deep learning). Used not occluded images for training. First row = occluded image, second row=generated, third row=completed image.}
+  \end{center}
+\end{figure}
+This version with random generation still can compete with the simple deep learning from above. Still, if one reduces the input from the MNIST classification the results get worse again.
+\begin{figure}[H]
+  \begin{center}
+    \includegraphics[width=0.8\textwidth]{presentation_results/VAE/MNIST-VAE-useRandom_true-useMNIST_true-VAERepresentation_3-useOccludedForTrain_false.png}
+    \caption{Additional input used (softmax output). Did use random generation (=just deep learning). Used not occluded images for training. First row = occluded image, second row=generated, third row=completed image.}
+  \end{center}
+\end{figure}
+Due to decreasing the output to the softmax again, the results rely more on the VAE itself. This can be improved with a longer training time. For these results the VAE and MNIST network was trained for 20 epochs seperately.\\ \ \\
+\begin{figure}[H]
+  \begin{center}
+    \includegraphics[width=0.8\textwidth]{presentation_results/VAE/LFW-VAE-useRandom_false-useOccludedForTrain_True.png}
+    \caption{Did use random generation (=just deep learning). Used occluded images for training.  First row = occluded image, second row=generated, third row=completed image.}
+  \end{center}
+\end{figure}
+\begin{figure}[H]
+  \begin{center}
+    \includegraphics[width=0.8\textwidth]{presentation_results/VAE/LFW-VAE-useRandom_True-useOccludedForTrain_False.png}
+    \caption{Did use random generation (=just deep learning). Used occluded images for training.  First row = occluded image, second row=generated, third row=completed image.}
+  \end{center}
+\end{figure}
+The same can be done for the LFW dataset, without additional classification input due to one has no label specific generation.
+
+
+ Many more parameters has been tried and can be found as images attached as additional folder or generated by modified code.
+
 \subsection{Deep Feature Interpolation}
+For the feature vectors for the \textbf{NN search} one needs to differ between the datasets.
+\begin{itemize}
+  \item MNIST
+  \begin{itemize}
+    \item VGG-19 pretrained on ILSVRC $\implies$ output of the first FC layer.
+    \item Pretrained MNIST classification network from above $\implies$ output of last softmax layer (=used for final results).
+  \end{itemize}
+  \item LFW
+  \begin{itemize}
+    \item VGG-19 pretrained on ILSVRC $\implies$ output of the first FC layer.
+  \end{itemize}
+\end{itemize}
+The \textbf{manipulation and reconstruction} of the image is done by using first convolutional layer of the third conv-layer block in the VGG-19 network as described above. \\
+The results are the following:
+  \begin{figure}[H]
+    \begin{center}
+      \includegraphics[width=0.8\textwidth]{images/DFI-final2.png}
+      \caption{Results for DFI on LFW and MNIST. First MNIST picture=occluded image, second MNIST picture=completed image with feature vectors of VGG-19, third MNIST picture=completed image with feature vectors of MNIST classification network.}
+    \end{center}
+  \end{figure}
 \subsection{Comparison}
+While the image stitching and VAE approach perform very well on the MNIST dataset, they more often fail on the LFW dataset. On the LFW dataset the DFI approach is the best solution, while we get some grayish parts due to pollution of the difference vector on the MNIST dataset. This may be fixed with a better feature representation of the MNSIT digits while the NN search.
 \cite{dummyEntry}
 
 

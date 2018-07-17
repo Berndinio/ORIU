@@ -26,10 +26,15 @@
 \contentsline {subsubsection}{\numberline {6.3.2}Finding the Nearest Neighbors}{13}{subsubsection.42}
 \contentsline {subsubsection}{\numberline {6.3.3}Difference Vector}{13}{subsubsection.43}
 \contentsline {subsubsection}{\numberline {6.3.4}Image Reconstruction}{14}{subsubsection.44}
-\contentsline {section}{\numberline {7}Experiments and Results}{15}{section.45}
-\contentsline {subsection}{\numberline {7.1}Datasets}{15}{subsection.46}
-\contentsline {subsection}{\numberline {7.2}Image Stitching}{15}{subsection.47}
-\contentsline {subsection}{\numberline {7.3}Variational Autoencoder}{15}{subsection.48}
-\contentsline {subsection}{\numberline {7.4}Deep Feature Interpolation}{15}{subsection.49}
-\contentsline {subsection}{\numberline {7.5}Comparison}{15}{subsection.50}
-\contentsline {section}{Literature}{16}{subsection.50}
+\contentsline {section}{\numberline {7}Experiments and Results}{14}{section.45}
+\contentsline {subsection}{\numberline {7.1}Datasets}{14}{subsection.46}
+\contentsline {subsection}{\numberline {7.2}Structures of networks}{15}{subsection.47}
+\contentsline {subsubsection}{\numberline {7.2.1}MNIST classification network}{15}{subsubsection.48}
+\contentsline {subsubsection}{\numberline {7.2.2}VAE on MNIST}{15}{subsubsection.51}
+\contentsline {subsubsection}{\numberline {7.2.3}VAE on labeled faces in the wild}{16}{subsubsection.52}
+\contentsline {subsubsection}{\numberline {7.2.4}VGG-19}{16}{subsubsection.57}
+\contentsline {subsection}{\numberline {7.3}Image Stitching}{16}{subsection.60}
+\contentsline {subsection}{\numberline {7.4}Variational Autoencoder}{18}{subsection.63}
+\contentsline {subsection}{\numberline {7.5}Deep Feature Interpolation}{21}{subsection.76}
+\contentsline {subsection}{\numberline {7.6}Comparison}{22}{subsection.79}
+\contentsline {section}{Literature}{23}{subsection.79}

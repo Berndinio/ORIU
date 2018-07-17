@@ -27,8 +27,13 @@
 \BOOKMARK [3][]{subsubsection.44}{6.3.4 Image Reconstruction}{subsection.40}% 27
 \BOOKMARK [1][]{section.45}{7 Experiments and Results}{}% 28
 \BOOKMARK [2][]{subsection.46}{7.1 Datasets}{section.45}% 29
-\BOOKMARK [2][]{subsection.47}{7.2 Image Stitching}{section.45}% 30
-\BOOKMARK [2][]{subsection.48}{7.3 Variational Autoencoder}{section.45}% 31
-\BOOKMARK [2][]{subsection.49}{7.4 Deep Feature Interpolation}{section.45}% 32
-\BOOKMARK [2][]{subsection.50}{7.5 Comparison}{section.45}% 33
-\BOOKMARK [1][]{subsection.50}{Literature}{}% 34
+\BOOKMARK [2][]{subsection.47}{7.2 Structures of networks}{section.45}% 30
+\BOOKMARK [3][]{subsubsection.48}{7.2.1 MNIST classification network}{subsection.47}% 31
+\BOOKMARK [3][]{subsubsection.51}{7.2.2 VAE on MNIST}{subsection.47}% 32
+\BOOKMARK [3][]{subsubsection.52}{7.2.3 VAE on labeled faces in the wild}{subsection.47}% 33
+\BOOKMARK [3][]{subsubsection.57}{7.2.4 VGG-19}{subsection.47}% 34
+\BOOKMARK [2][]{subsection.60}{7.3 Image Stitching}{section.45}% 35
+\BOOKMARK [2][]{subsection.63}{7.4 Variational Autoencoder}{section.45}% 36
+\BOOKMARK [2][]{subsection.76}{7.5 Deep Feature Interpolation}{section.45}% 37
+\BOOKMARK [2][]{subsection.79}{7.6 Comparison}{section.45}% 38
+\BOOKMARK [1][]{subsection.79}{Literature}{}% 39
