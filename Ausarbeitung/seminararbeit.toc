@@ -11,21 +11,21 @@
 \contentsline {section}{\numberline {3}ILSVRC 2014}{7}{section.25}
 \contentsline {section}{\numberline {4}Feature extraction}{7}{section.26}
 \contentsline {section}{\numberline {5}Nearest neighbor search}{8}{section.29}
-\contentsline {section}{\numberline {6}Methods}{9}{section.30}
-\contentsline {subsection}{\numberline {6.1}Image Stitching}{9}{subsection.31}
+\contentsline {section}{\numberline {6}Methods}{8}{section.30}
+\contentsline {subsection}{\numberline {6.1}Image Stitching}{8}{subsection.31}
 \contentsline {subsubsection}{\numberline {6.1.1}Finding the Best Image}{9}{subsubsection.32}
-\contentsline {subsubsection}{\numberline {6.1.2}Transformation}{10}{subsubsection.33}
+\contentsline {subsubsection}{\numberline {6.1.2}Transformation}{9}{subsubsection.33}
 \contentsline {subsubsection}{\numberline {6.1.3}Stitching}{10}{subsubsection.34}
 \contentsline {subsection}{\numberline {6.2}Variational Autoencoder}{10}{subsection.35}
 \contentsline {subsubsection}{\numberline {6.2.1}Structure}{10}{subsubsection.36}
-\contentsline {subsubsection}{\numberline {6.2.2}Basic Thought}{11}{subsubsection.37}
+\contentsline {subsubsection}{\numberline {6.2.2}Basic Thought}{10}{subsubsection.37}
 \contentsline {subsubsection}{\numberline {6.2.3}Generating images}{11}{subsubsection.38}
-\contentsline {subsubsection}{\numberline {6.2.4}Extension to Classes}{12}{subsubsection.39}
+\contentsline {subsubsection}{\numberline {6.2.4}Extension to Classes}{11}{subsubsection.39}
 \contentsline {subsection}{\numberline {6.3}Deep Feature Interpolation}{12}{subsection.40}
 \contentsline {subsubsection}{\numberline {6.3.1}Overview}{12}{subsubsection.41}
 \contentsline {subsubsection}{\numberline {6.3.2}Finding the Nearest Neighbors}{13}{subsubsection.42}
 \contentsline {subsubsection}{\numberline {6.3.3}Difference Vector}{13}{subsubsection.43}
-\contentsline {subsubsection}{\numberline {6.3.4}Image Reconstruction}{14}{subsubsection.44}
+\contentsline {subsubsection}{\numberline {6.3.4}Image Reconstruction}{13}{subsubsection.44}
 \contentsline {section}{\numberline {7}Experiments and Results}{14}{section.45}
 \contentsline {subsection}{\numberline {7.1}Datasets}{14}{subsection.46}
 \contentsline {subsection}{\numberline {7.2}Structures of networks}{15}{subsection.47}
@@ -34,7 +34,7 @@
 \contentsline {subsubsection}{\numberline {7.2.3}VAE on labeled faces in the wild}{16}{subsubsection.52}
 \contentsline {subsubsection}{\numberline {7.2.4}VGG-19}{16}{subsubsection.57}
 \contentsline {subsection}{\numberline {7.3}Image Stitching}{16}{subsection.60}
-\contentsline {subsection}{\numberline {7.4}Variational Autoencoder}{18}{subsection.63}
-\contentsline {subsection}{\numberline {7.5}Deep Feature Interpolation}{21}{subsection.76}
-\contentsline {subsection}{\numberline {7.6}Comparison}{22}{subsection.79}
-\contentsline {section}{Literature}{23}{subsection.79}
+\contentsline {subsection}{\numberline {7.4}Variational Autoencoder}{17}{subsection.63}
+\contentsline {subsection}{\numberline {7.5}Deep Feature Interpolation}{20}{subsection.76}
+\contentsline {subsection}{\numberline {7.6}Comparison}{21}{subsection.79}
+\contentsline {section}{Literature}{22}{subsection.79}

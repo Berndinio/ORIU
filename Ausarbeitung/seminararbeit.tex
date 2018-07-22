@@ -1,4 +1,4 @@
-% This template is provided for all the participants of the seminar ``Social Network Data Analytics''
+% % This template is provided for all the participants of the seminar ``Social Network Data Analytics''
 %%%%%%%%%%%%%%%%%%%%%
 % Author information:
 %%%%%%%%%%%%%%%%%%%%%
@@ -169,7 +169,7 @@ Heidelberg, \generalDate \hspace{2cm} \underline{\includegraphics[scale=0.2]{ima
 \pagenumbering{arabic}
 \section{Introduction}
 Nowadays image processing is getting more and more important. This manifests in many different fields of image processing reaching from classification to image generation.
-This report will cover the special field of image completion. Due to this field tries to produce new information for an occluded image, it can also be solved by image generation.
+This project will cover the field of image completion. Due to this field tries to produce new information for an occluded image, it can also be solved by image generation.
 Therefore one has several methods available to solve this task. For example variational autencoders or generative adversarial networks. Still, generating images is not the only way to solve this problem. That is why this report will cover three methods and compare them.
 \begin{itemize}
   \item Image Stitching
@@ -179,13 +179,13 @@ Therefore one has several methods available to solve this task. For example vari
 While the variational autoencoder can be used to generate specific completely new data, DFI and image stitching are not able to do this.
 In our examples the MNIST and \enquote{labeled faces in the wild} (LFW) datasets are used. While MNIST has several classes, LFW only consists out of faces. \\
 The simplest of the three approaches is \textbf{image stitching}, which just tries to find a similar image according to features and tries to find a transformation of facial landmark coordinates from the nearest neighbor image to the occluded image. With help of this transformation the nearest neighbor can be transformed and the fill the missing parts of the occluded image.\\
-The generative variational autoencoder approach can be trained and then used to
+The \textbf{variational autoencoder} approach can be trained and then used to
 \begin{itemize}
-  \item trained with the occluded images to reconstruct the missing parts directly.
-  \item generate a new image and fill the missing parts (trained without occlusion).
+  \item generate a new image and fill the missing parts (trained without occlusion) or
+  \item can be trained with the occluded images to reconstruct the missing parts directly (kind of deep learning only).
 \end{itemize}
-For the second approach there needs to be an adaption for label specific generation, which will be presented lateron. \\
-The deep feature interpolation approach takes two datasets, which are occluded and not occluded images. According to this the method computes the difference between those two sets in a feature space and adds this difference to the image one wants to reconstruct/complete. Afterwards one needs to reconstruct the image from the feature space. For this backpropagation will be applied.
+For the generation approach there needs to be an adaption for label specific generation, which will be presented lateron. \\
+The \textbf{DFI} approach takes two datasets, which are occluded and not occluded images. According to this the method computes the difference between those two sets in a feature space and adds this difference to the image one wants to reconstruct/complete. Afterwards one needs to reconstruct the image from the feature space. For this backpropagation will be applied to the input.
 
 \section{Convolutional Neural Networks}
 Convolutional neural networks are a very important tool to accomplish the goal of image completion for all three methods. Even if convolutional neural networks should be known by almost everyone in this field, one will give a \underline{\textbf{brief}} introduction to CNNs and how it is trained. Afterwards the structure of a VGG19 will be presented, which is a commonly used network and will be used for the algorithms.
@@ -213,16 +213,16 @@ The most common computation is the max-pooling, where the maximum value within t
 \end{figure}
 
 \subsubsection{Fully Connected}
-Fully connected (=FC) layers take inputs $x_i$ and compute multiple output values. FC layers consist out of multiple single so called \enquote{neurons}. Each of these neuron takes every $x_i$ as input and produces a single output $y$. For this process each of these neurons has weights $w_i$. With weight $w_i$ input $x_i$ is weighted. Furthermore each neuron has its own weights.
+Fully connected (=FC) layers take inputs $x_i$ and compute multiple output values. FC layers consist out of multiple so called \enquote{neurons}. Each of these neurons take every $x_i$ as input and produces a single output $y$. For this process each of these neurons has weights $w_i$. The input $x_i$ is weighted with weight $w_i$. Furthermore each neuron has its own weights, indpendent from the other neurons.
 The formular for a single neuron would be
 \begin{align*}
   a = \sum^n_{i=0} w_i \cdot x_i
 \end{align*}
-In the end each neuron puts its computed value in an arbitrary non-linear activation function $\phi$ resulting in
+In the end each neuron puts its computed value in an arbitrary \textbf{non-linear} activation function $\phi$ resulting in
 \begin{align*}
   y = \phi (a) = \phi ( \sum^n_{i=0} w_i \cdot x_i )
 \end{align*}
-If one takes many neurons, one gets a fully connected layer. A n neuron FC layer results in n outputs.
+If one takes many neurons, one gets a fully connected layer. A $n$ neuron FC layer results in n outputs.
 \begin{figure}[H]
   \begin{center}
     \includegraphics[width=0.3\textwidth]{images/fc-layer.png}
@@ -278,10 +278,9 @@ The dataset for the second task contains 1000 categories and over 150.000 images
 
 \section{Feature extraction}
 The feature extraction of an image can be of any type. For example one can take the HOG descriptor and extract features or just use facial landmarks.\\
-In this chapter one will get to know how features are extracted for this specific project.
-The feature vectors are extracted from an intermediate layer of a CNN, which is a pretrained VGG-19 on the ILSVRC 2014 in this case.
+In this project the feature vectors are extracted from an intermediate layer of a CNN, which is a pretrained VGG-19 on the ILSVRC 2014.
 One just forwardpasses the image and takes the vectorized/flattened representation of the output of intermediate layers.
-This vector is now our feature vector which represents the image. In case of an 3x3x64 output of a convolutional layer, the feature vector would be of size 1x576 $\equiv$ 1x(3*3*64).\\
+This vector is now our feature vector which represents the image. In case of an 3x3x64 convolutional layer output, the feature vector would be of size 1x576 $\equiv$ 1x(3*3*64).\\
 \begin{figure}[H]
   \begin{center}
     \includegraphics[width=1.0\textwidth]{images/VGG19.png}
@@ -293,12 +292,13 @@ One can see in figure \ref{fig:VGG19} that one took the first FC layer output as
 
 
 \section{Nearest neighbor search}
-Nearest neighbor search is an easy algorithm to find similar items in a dataset. Assume one has a dataset with n items $D = {d_1, d_2, ..., d_n}$ and wants to find the most similar sample $d_i$ to our additional sample $s$. Here $d_i$ and s are feature vectors extractet like described beforehand. All one needs in this case is proper a distance function $\phi(a,b) = x$. This can be for example the manhattan or euclidean distance. \\
+Nearest neighbor search is an easy algorithm to find similar items in a dataset and is used to prefilter the matches lateron. Assume one has a dataset with n items $D = {d_1, d_2, ..., d_n}$ and wants to find the most similar sample $d_i$ to our additional sample $s$. Here $d_i$ and s are feature vectors extractet like described beforehand. All one needs in this case is proper a distance function $\phi(a,b) = x$. This can be for example the manhattan or euclidean distance. \\
 The task is then to solve
 \begin{align*}
   \text{nearest neighbor} = \underset{x \in D}{argmin} [\phi(s,x)]
 \end{align*}
-Anologous for the 100 nearest neighbors one would search for the 100 minimum distances. This method will later be used to find similar images to the source image s, to improve the algorithms.
+Anologous to the above described one nearest neighbors, for the 100 nearest neighbors one would search for the 100 minimal distances.
+
 
 
 \section{Methods}
