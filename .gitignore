@@ -3,8 +3,8 @@ dataset/*
 DFI/*h5
 
 Ausarbeitung/*
-!Ausarbeitung/images/*
-!Ausarbeitung/presentation_results/*
+!Ausarbeitung/images*
+!Ausarbeitung/presentation_results*
 !Ausarbeitung/*.tex
 !Ausarbeitung/*.bib
 
