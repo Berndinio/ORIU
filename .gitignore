@@ -2,6 +2,12 @@ dataset/*
 !dataset/*.py
 DFI/*h5
 
+Ausarbeitung/*
+!Ausarbeitung/images/*
+!Ausarbeitung/presentation_results/*
+!Ausarbeitung/*.tex
+!Ausarbeitung/*.bib
+
 *.pyc
 saves/*
 shape_predictor_68_face_landmarks.dat

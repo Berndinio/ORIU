@@ -323,10 +323,11 @@ In addition to the cosine distance one can take the pixel loss around the occlus
 \begin{align*}
   \phi(a,b)=cosine(a,b)+ \alpha \sum_{c \in C} \sum_{p \in P} |a_{p_c}-b_{p_c}|
 \end{align*}
-where P contains all direct pixels around the occlusion, a is the nearest neighbor image, b the occluded image, $\alpha$ the importance factor of the pixels color difference and C the channels of the image. This ensures, that colors of the NN is as similar as possible.
+where P contains all direct pixels around the occlusion, a is the nearest neighbor image, b the occluded image, $\alpha$ the importance factor of the pixels color difference and C the channels of the image. This ensures, that colors of the NN are as similar as possible.
 
 \subsubsection{Transformation}
-Now a transformation can be found for a linear transformation problem. For this one extracts the facial landmark positions in both pictures and tries to find an optimal linear transformation with the RANSAC algorithm. This also can be done for the color domain of the image (=only for some pixels around the occlusion). With help of these transformations one tries to make the images as similar as possible.
+Now a transformation can be found for an affine transformation problem. For this one extracts the facial landmark positions in both pictures and tries to find an optimal transformation using the RANSAC algorithm. With help of these transformations one tries to make the images as similar as possible.\\4
+This also \textbf{could} be done for the color domain of the image (=only for some pixels around the occlusion) too, but is not used here.
 
 \subsubsection{Stitching}
 Now that one has the most similar and transformed image, one can just cut the missing area out of this image and paste it into our occluded image into the same area.
@@ -334,8 +335,8 @@ Now that one has the most similar and transformed image, one can just cut the mi
 \subsection{Variational Autoencoder}
 The second method used is a variational autoencoder. In the following an introduction to VAEs is given and will then be extended to the use with class labels. This has the advantage one does not have to train a VAE for each class, but can use a single VAE for many classes.
 \subsubsection{Structure}
-A VAE consists out of two major parts, an \textbf{encoder} and \textbf{decoder}. The encoder takes an image as input and reduces this image into an intermediate representation. The decoder then takes this intermediate representation and tries to reconstruct the image matching to this representation. The simplest VAEs consist out of fully connected layers. The more advanced ones use convolutional layers too. It is important that one does not use pooling layers due to pooling layers destroy image information and would result in a \textbf{much} more blurry or incorrect reconstruction. \\
-Due to one uses convolutional layers, one needs to know how to \enquote{reverse} this operation. Therefore transposed convolution (=deconvolution) exists. Ofcourse the name deconvolution is not very correct, because it is not possible to have an inverse for a convolution due to its ambiguity.
+A VAE consists out of two major parts, an \textbf{encoder} and \textbf{decoder}. The encoder takes an image as input and reduces this image into an intermediate representation. The decoder then takes this intermediate representation and tries to reconstruct the image. The simplest VAEs consist out of fully connected layers. The more advanced ones use convolutional and deconvolutional layers also. It is important that one does not use pooling layers due to pooling layers destroys image information and would result in a \textbf{much} more blurry or incorrect reconstruction. \\
+Due to one uses convolutional layers, one needs to know how to \enquote{reverse} this operation. Therefore transposed convolution (=deconvolution) exists as introduced beforehand.
 \subsubsection{Basic Thought}
 The main idea of VAEs is to produce the intermediate representation. This intermediate representation then later can be used to generate completely new samples. Lets denote the probability distribution of the latent variables as $p(z)$ and $p(X)$ as the distribution for the images/inputs. \\
 The intermediate representation can be seen as mean and variance of a d-dimensional normal distribution representing the image.
@@ -361,62 +362,68 @@ where $\mu$ is the mean and $\sigma$ the variance.\\
 Then z is the input for our decoder, which reconstructs our generated image.
 
 \subsubsection{Extension to Classes}
-Due to one has no control for the classes generate by the VAE, there is a simple extension to this. At the moment the decoder of the VAE tries to learn the distribution $p(X'|z)$, where X' is the reconstructed image. This is extendable to class specific generation, if one just adds the class label (=one hot encoded vector) to the latent vector z. Then the decoder just learns the distribution $p(X'|z,c)$ where c is the additional vector.\\
-The good thing is, that one does not even need to know the class. One can take a classification network and just take its softmax output as vector c while training the VAE. This gives us the ability to controle the generation process. Now one just needs to feed-forward the concatenated vector z and c into the decoder and an image according to the label will be generated.\\
-This is important for later image completion, because the VAE needs to know an approximate label, which is given by the classification network.
+Due to one has no control over class specific generation in this process, there is a simple extension to this. Let us denote X' as the reconstructed image and z as the latent variables. This decoder process is extandable to class specific generation, by adding the class label (=one hot encoded vector) to the latent vector z. Then the decoder just learns the distribution $p(X'|z,c)$ instead of  $p(X'|z)$ where c is the additional vector.\\
+The advantage is, that one does not even need to know the class. One can take a classification network and just take its softmax output as vector c while training the VAE. This gives us the ability to have a class specific generation process. Now one just needs to feed-forward the concatenated vector z and c into the decoder and an image according to the label will be generated.\\
+This is important for later image completion, because the VAE needs to know an approximate label in the MNIST dataset, which is given by the classification network.
 
 \subsection{Deep Feature Interpolation}
 \subsubsection{Overview}
 In general one has two datasets. One not occluded image set $D_1$ and one occluded image set $D_2$.
 . According to this the overview of the algorithm is as followed.
 \begin{itemize}
-	\item Get feature vector $\sigma (I_1)$ representation of occluded image $I_1$
-	\item Have two datasets $D_1, D_2$.
+	\item Trying to complete occluded image $I_1$
+	\item Get feature vector $\sigma (I_1)$ of $I_1$
+	\item Two datasets
+    \begin{itemize}
+        \item Occluded images $D_1$ \textbf{and} not occluded images $D_2$
+    \end{itemize}
     \item Find 100 nearest neighbors in both datasets according to feature vector
-    \item Get the difference vector between the 100 NN of the occluded set and the ones of the the not occluded set.\\
-    \item Add scaled diff to feature vector of occluded image $I_1$
+    \item Get the difference vector
+    \item Add scaled diff to feature vector of $I_1$
     \begin{align*}
     	target = \sigma (I_1) + \alpha \cdot diff
     \end{align*}
     \item Reconstruct the image according to manipulated feature vector by inversion of neural network
     \begin{itemize}
-        \item Forward pass (partial reconstructed) image
-        $\implies$ first forwardpass is black image
-        \item Compute loss (black box for the moment)
+        \item Forward pass image \\
+        $\implies$ First forwardpass is black image
+        \item Compute loss
         \item Get gradients w.r.t input image
         \item Manipulate pixels according to gradients
     \end{itemize}
 \end{itemize}
 
+
 \subsubsection{Finding the Nearest Neighbors}
-The nearest neighbor search is easily done by the cosine distance as in the image stitching approach.
+The nearest neighbor search is easily done by the cosine distance similar to the image stitching approach.
 In difference to image stitching one just uses the cosine distance with normalized feature vectors and no additional pixel difference.\\
 Now one just needs the feature vector of our image and find its 100 nearest neighbors (=least distances) \textbf{for each of the two sets}.
 
 \subsubsection{Difference Vector}
-After on computed the 100 nearest neighbors with the above distance function, one needs to extract the difference vector between the two datasets.
+After one computed the 100 nearest neighbors, one needs to extract the difference vector between the two datasets.
 This is done by computing the mean feature vector for each set based on the 100 nearest neighbors.
 \begin{align*}
   \mu_{1/2} = \frac{1}{100} \sum^{100}_{i=1} a^i
 \end{align*}
-where $a^i$ is the feature vector of the i-th neighbor, $\mu_1$ the mean vector for the negative set and $\mu_2$ the mean vector for the positive set.
+where $a^i$ is the feature vector of the i-th neighbor, $\mu_1$ the mean vector for the not occluided set and $\mu_2$ the mean vector for the occluded set.
 Then the difference is computed
 \begin{align*}
   \sigma_{diff} = \mu_2 - \mu_1
 \end{align*}
 and added to the image one wants to manipulate by a weightning factor $\alpha$.
 \begin{align*}
-  \sigma_{toReconstruct} &= \sigma_{toManipulate} + \alpha \sigma_{diff}\\
+  \sigma_{toReconstruct} &= \sigma (I_1) + \alpha \cdot \sigma_{diff}\\
   \alpha &= \frac{\beta}{\frac{1}{d} w \cdot w}\\
   \beta &= 0.4
 \end{align*}
 \subsubsection{Image Reconstruction}
-Now that one has the manipulated feature vector $\sigma_{toReconstruct}$ which now contains our completed image in feature vector form, one needs to transform this into an image again. This can be done by inverting the neural network. First a black image is fed forward. Then the feature vector $\sigma_{black}$ for the initially black image is extracted. Afterwards one computes the Loss
+Now that one has the manipulated feature vector $\sigma_{I_1}$ which now contains our completed image in feature vector form, one needs to transform this into an image again. This can be done by inverting the neural network. First a black image is fed forward. Then the feature vector $\sigma_{black}$ for the initially black image is extracted. Afterwards one computes the loss
 \begin{align*}
   Loss = \frac{1}{2} ||\sigma_{toReconstruct} - \sigma_{black}||_2^2
 \end{align*}
-Then the gradients are added to an initially black input image. This is done 200 times until the image is fully reconstructed. \\
-Due to this reconstruction process is very unstable and gradients can explode in some areas, one adds a neighbor pixel loss to the image to smooth the image a bit.
+which is simply the squared euclidean distance.
+Then the gradients w.r.t. the input are added to an initially black image. This is done 200 times until the image is fully reconstructed. \\
+Due to the reconstruction process is very unstable and gradients can explode in some areas, one limits the gradients w.r.t. the input and adds a neighbor pixel loss to smooth the reconstructed image a bit.
 \begin{align*}
   R_V = \sum_{i,j} ((\sigma_{black_{i,j+1}} - \sigma_{black_{i,j}})^2 + (\sigma_{black_{i+1,j}} - \sigma_{black_{i,j}})^2)^{\frac{\beta}{2}}
 \end{align*}
@@ -424,7 +431,7 @@ This makes the final loss look like the following
 \begin{align*}
   Loss = \frac{1}{2} ||\sigma_{toReconstruct} - \sigma_{black}||_2^2 + \lambda R_V
 \end{align*}
-where $\lambda$ is an image smoothening factor and $\beta = 0.4$ like before.
+where $\lambda$ is an additional image smoothening factor and $\beta = 0.4$ like beforehand.
 
 
 
@@ -499,12 +506,11 @@ Still there were different methods tried out from the beginning to find the near
   \item Nearest neighbor search with faiss index with \textbf{100} result images.
   Finding \textbf{one} nearest neighbor out of the 100 with pixel loss around the occluded part. Stitching \textbf{with} finding the transformation for facial landmarks between two images.
 \end{itemize}
-Pixel loss is done as described in the above sections. \\
 For the feature vectors for the NN search one needs to differ between the datasets.
 \begin{itemize}
   \item MNIST
   \begin{itemize}
-    \item VGG-19 pretrained on ILSVRC $\implies$ output of the first FC layer.
+    \item VGG-19 pretrained on ILSVRC 14$\implies$ output of the first FC layer.
     \item Pretrained MNIST classification network from above $\implies$ output of last softmax layer (=used for foinal results).
   \end{itemize}
   \item LFW
@@ -516,15 +522,16 @@ The final results (=third method from above) are the following:
   \begin{figure}[H]
     \begin{center}
       \includegraphics[width=0.8\textwidth]{images/stitching_final2.png}
-      \caption{Results for image stitching on LFW and MNIST}
+      \caption{Results for image stitching on LFW and MNIST. LFW image order: occluded image/nearest neighbor/transformed nearest neighbor/stitched image. MNIST image order: occluded image/nearest neighbor/stitched image.}
     \end{center}
   \end{figure}
-
+One can see, that the stitching is good for the LFW dataset. Still there are also bad results, which are not taking into account the head rotation properly.\\
+On the MNIST dataset one can see, that not always the proper class label is taken for the NN image. This can be improved by chosing a better network maybe.
 
 \subsection{Variational Autoencoder}
 The VAE method has the most parameters.
 \begin{itemize}
-  \item The additional input for the decoder. Here one can use which layer of the classification network should be injected into the intermediate representation of the VAE. \textbf{This is only available for the MNIST dataset!}
+  \item The additional input for the decoder. Here one can choose which layer of the classification network should be injected into the intermediate representation of the VAE for class specific generation. \textbf{This is only available for the MNIST dataset!}
   \item Use random generation of the VAE or not. Here one can chose if samples should be generated and then stitched into the image or the network just acts as a normal deep learning structure reconstructing the occluded parts directly.
   \item Use the occluded images to train the VAE or not.
 \end{itemize}
@@ -549,14 +556,15 @@ Due to this is still just a forward pass (=just deep learning), let's analyse th
     \caption{Additional input used (flattened vector of last convolutional output). Did use random generation (=just deep learning). Used not occluded images for training. First row = occluded image, second row=generated, third row=completed image.}
   \end{center}
 \end{figure}
-This version with random generation still can compete with the simple deep learning from above. Still, if one reduces the input from the MNIST classification the results get worse again.
+This version with random generation still can compete with the simple deep learning from above. Still, if one reduces the additional input from the MNIST network the results get worse again.
 \begin{figure}[H]
   \begin{center}
     \includegraphics[width=0.8\textwidth]{presentation_results/VAE/MNIST-VAE-useRandom_true-useMNIST_true-VAERepresentation_3-useOccludedForTrain_false.png}
     \caption{Additional input used (softmax output). Did use random generation (=just deep learning). Used not occluded images for training. First row = occluded image, second row=generated, third row=completed image.}
   \end{center}
 \end{figure}
-Due to decreasing the output to the softmax again, the results rely more on the VAE itself. This can be improved with a longer training time. For these results the VAE and MNIST network was trained for 20 epochs seperately.\\ \ \\
+Due to decreasing the output to the softmax again, the results rely more on the VAE itself. This can be improved with a longer training time. For these results the VAE and MNIST network was trained for 20 epochs seperately.\\
+The same can be done for the LFW dataset, without additional classification input due to one has no label specific generation.
 \begin{figure}[H]
   \begin{center}
     \includegraphics[width=0.8\textwidth]{presentation_results/VAE/LFW-VAE-useRandom_false-useOccludedForTrain_True.png}
@@ -569,9 +577,6 @@ Due to decreasing the output to the softmax again, the results rely more on the 
     \caption{Did use random generation (=just deep learning). Used occluded images for training.  First row = occluded image, second row=generated, third row=completed image.}
   \end{center}
 \end{figure}
-The same can be done for the LFW dataset, without additional classification input due to one has no label specific generation.
-
-
  Many more parameters has been tried and can be found as images attached as additional folder or generated by modified code.
 
 \subsection{Deep Feature Interpolation}
@@ -579,7 +584,7 @@ For the feature vectors for the \textbf{NN search} one needs to differ between t
 \begin{itemize}
   \item MNIST
   \begin{itemize}
-    \item VGG-19 pretrained on ILSVRC $\implies$ output of the first FC layer.
+    \item VGG-19 pretrained on ILSVRC 14 $\implies$ output of the first FC layer.
     \item Pretrained MNIST classification network from above $\implies$ output of last softmax layer (=used for final results).
   \end{itemize}
   \item LFW
@@ -587,7 +592,7 @@ For the feature vectors for the \textbf{NN search} one needs to differ between t
     \item VGG-19 pretrained on ILSVRC $\implies$ output of the first FC layer.
   \end{itemize}
 \end{itemize}
-The \textbf{manipulation and reconstruction} of the image is done by using first convolutional layer of the third conv-layer block in the VGG-19 network as described above. \\
+The \textbf{manipulation} of the image is done by using first convolutional layer of the third conv-layer block in the VGG-19 network as described above and the \textbf{reconstruction} is done by using the first layer of the last three blocks.\\
 The results are the following:
   \begin{figure}[H]
     \begin{center}
@@ -596,7 +601,7 @@ The results are the following:
     \end{center}
   \end{figure}
 \subsection{Comparison}
-While the image stitching and VAE approach perform very well on the MNIST dataset, they more often fail on the LFW dataset. On the LFW dataset the DFI approach is the best solution, while we get some grayish parts due to pollution of the difference vector on the MNIST dataset. This may be fixed with a better feature representation of the MNSIT digits while the NN search.
+While the image stitching and VAE approach perform very well on the MNIST dataset, they more often fail on the LFW dataset. On the LFW dataset the DFI approach is the best solution, while we get some grayish parts due to polution of the difference vector on the MNIST dataset. This may be fixed with a better feature representation of the MNSIT digits while the NN search.
 \cite{dummyEntry}
 
 
