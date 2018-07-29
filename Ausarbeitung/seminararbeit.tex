@@ -41,7 +41,10 @@
 % Fuer Textsatz
 \usepackage{setspace}
 % For bibliography style
-\usepackage[numbers]{natbib}
+%\usepackage[numbers]{natbib}
+\usepackage[backend=bibtex]{biblatex}
+% c) The File:
+\addbibresource{seminararbeit.bib}
 % for Latex symbols
 \usepackage{doc}
 \usepackage{csquotes}
@@ -192,22 +195,22 @@ Convolutional neural networks are a very important tool to accomplish the goal o
 \subsection{Structure}
 There are several types of layers which can be used to build a CNN.
 \subsubsection{Convolution}
-The classic convolution is defined by so called \textbf{filters}. Filters can be seen as a window of a specific pixel size, the so called \textbf{kernel size}. This window is moved over the input image. While this process each pixel within this window gets weighted, summed up and therefore produces a single output \enquote{pixel}. This is done for the whole input image. The weight is defined by the kernel weights. For example a filter with kernel size 3x3 has 3*3=9 weights.
+The classic convolution is defined by so called \textbf{filters}. Filters can be seen as a window of a specific pixel size, the so called \textbf{kernel size}. This window is moved over the input image. While this process each pixel within this window gets weighted, summed up and therefore produces a single output \enquote{pixel}. This is done for the whole input image. The weight is defined by the kernel weights. For example a filter with kernel size 3x3 has 3*3=9 weights. \cite{neuralnetworksanddeeplearning}
 \begin{figure}[H]
   \begin{center}
     \includegraphics[width=0.5\textwidth]{images/1.JPG}
-    \caption{A convolution with kernel size 3x3 producing a single output. The kernel matrix would be slid over the image matrix for further values. The window would be moved to the right for the next value. After the line is finished it would be moved one down, resulting in a slide from left to right and top to bottom.}
+    \caption{A convolution with kernel size 3x3 producing a single output. The kernel matrix would be slid over the image matrix for further values. The window would be moved to the right for the next value. After the line is finished it would be moved one down, resulting in a slide from left to right and top to bottom.\cite{conv1}}
     \label{fig:conv}
   \end{center}
 \end{figure}
 
 \subsubsection{Pooling}
 The pooling layer consists out of a pooling size analogous to the kernel size. In contrast to the filters it has no weights. The window with the pooling size is slid over the input image with a stride (often matching the pooling size). This means, that width and height is halfed with a pooling size of two. Each of these slides produces a single output value.\\
-The most common computation is the max-pooling, where the maximum value within this window is taken as output. Still, there are other pooling functions like average pooling or median pooling.
+The most common computation is the max-pooling, where the maximum value within this window is taken as output. Still, there are other pooling functions like average pooling or median pooling. \cite{neuralnetworksanddeeplearning}
 \begin{figure}[H]
   \begin{center}
     \includegraphics[width=0.5\textwidth]{images/pooling.png}
-    \caption{Max-Pooling with size 2 and stride 2.}
+    \caption{Max-Pooling with size 2 and stride 2.\cite{pool1}}
     \label{fig:pool}
   \end{center}
 \end{figure}
@@ -226,40 +229,40 @@ If one takes many neurons, one gets a fully connected layer. A $n$ neuron FC lay
 \begin{figure}[H]
   \begin{center}
     \includegraphics[width=0.3\textwidth]{images/fc-layer.png}
-    \caption{Single FC layer. Left circles are the inputs $x_i$, right circles are the neurons producing four outputs.}
+    \caption{Single FC layer. Left circles are the inputs $x_i$, right circles are the neurons producing four outputs.\cite{FC1}}
     \label{fig:fc-layer}
   \end{center}
 \end{figure}
 
-These n outputs now can be taken as input for the next FC layer.
+These n outputs now can be taken as input for the next FC layer.\cite{neuralnetworksanddeeplearning}
 \begin{figure}[H]
   \begin{center}
     \includegraphics[width=0.5\textwidth]{images/multipleFC.png}
-    \caption{Multiple FC layers stacked.}
+    \caption{Multiple FC layers stacked.\cite{FC2}}
     \label{fig:multipleFC}
   \end{center}
 \end{figure}
 
 \subsubsection{Transposed Convolution}
 The transposed convolution is the \enquote{inverse} of the convolutional layer. Even if one calls it the inverse, the process of convolution cannot be inverted mathematically, but it can be inverted according to the shape.
-This means, that the output size of the transposed convolution is equal to the input of our convolutional layer and vice versa. To achieve this, one adds zeros at the borders of the input and moves the filter similar to the convolutional process over the image. A stride can be implemented by adding zero paddings between the input pixels.
+This means, that the output size of the transposed convolution is equal to the input of our convolutional layer and vice versa. To achieve this, one adds zeros at the borders of the input and moves the filter similar to the convolutional process over the image. A stride can be implemented by adding zero paddings between the input pixels.\cite{transposed1}\cite{transposed2}
 \begin{figure}[H]
   \begin{center}
     \includegraphics[width=0.4\textwidth]{images/tConv.png}
-    \caption{Transposed convolution with no padding, stride of 2 and kernel of 3. Blue is the input, green the output, gray the kernel. One can see the padding between the pixel due to the stride of 2.}
+    \caption{Transposed convolution with no padding, stride of 2 and kernel of 3. Blue is the input, green the output, gray the kernel. One can see the padding between the pixel due to the stride of 2.\cite{TConv1}}
     \label{fig:tConv}
   \end{center}
 \end{figure}
 
 \subsection{Learning the Network}
-The networks are learned with the backpropagation algorithm, which is just the chain rule applied to our error function to get the gradients for our weights within the neural network. Explaining this in depth would expand this report for three more pages and would be too much. Visit http://neuralnetworksanddeeplearning.com/ for further information.
+The networks are learned with the backpropagation algorithm, which is just the chain rule applied to our error function to get the gradients for our weights within the neural network. Explaining this in depth would expand this report for three more pages and would be too much. Visit http://neuralnetworksanddeeplearning.com/ \cite{neuralnetworksanddeeplearning} for further information.
 
 \subsection{VGG19}
 The VGG19 network is just a network with a defined structure, which is commonly used.
 \begin{figure}[H]
   \begin{center}
     \includegraphics[width=1.0\textwidth]{images/VGG19-orig.png}
-    \caption{The VGG-19 network. The specific structure within the convolutional layers is determined by CONV<kernel size>-<number of channels>}
+    \caption{The VGG-19 network. The specific structure within the convolutional layers is determined by CONV<kernel size>-<number of channels>.\cite{VGG19}}
     \label{fig:VGG19-orig}
   \end{center}
 \end{figure}
@@ -274,7 +277,7 @@ The contest consists out of two major tasks:
   \item Classification and Localization
 \end{itemize}
 The dataset for the first task contains 200 basic categories and over 500.000 images which contain over 525.000 objects from these 200 categories.\\
-The dataset for the second task contains 1000 categories and over 150.000 images with presence or absence of the objects.\\
+The dataset for the second task contains 1000 categories and over 150.000 images with presence or absence of the objects.\cite{ILSVRC15}\cite{ILSVRC152}\\
 
 \section{Feature extraction}
 The feature extraction of an image can be of any type. For example one can take the HOG descriptor and extract features or just use facial landmarks.\\
@@ -284,36 +287,11 @@ This vector is now our feature vector which represents the image. In case of an 
 \begin{figure}[H]
   \begin{center}
     \includegraphics[width=1.0\textwidth]{images/VGG19.png}
-    \caption{The VGG-19 network with the first FC layer in red.}
+    \caption{The VGG-19 network with the first FC layer in red.\cite{VGG19}}
     \label{fig:VGG19}
   \end{center}
 \end{figure}
-\section{Feature extraction}
-The feature extraction of an image can be of any type. For example one can take the HOG descriptor and extract features or just use facial landmarks.\\
-In this project the feature vectors are extracted from an intermediate layer of a CNN, which is a pre-trained VGG-19 on the ILSVRC 2014.
-One just forwardpasses the image and takes the vectorized/flattened representation of the output of intermediate layers.
-This vector is now our feature vector which represents the image. In case of an 3x3x64 convolutional layer output, the feature vector would be of size 1x576 $\equiv$ 1x(3*3*64).\\
-\begin{figure}[H]
-  \begin{center}
-    \includegraphics[width=1.0\textwidth]{images/VGG19.png}
-    \caption{The VGG-19 network with the first FC layer in red.}
-    \label{fig:VGG19}
-  \end{center}
-\end{figure}
-One can see in figure \ref{fig:VGG19} that one took the first FC layer output as our representation in this project.
-
-
-\section{Nearest neighbor search}
-Nearest neighbor search is an easy algorithm to find similar items in a dataset and is used to pre-filter the matches later on. Assume one has a dataset with n items $D = {d_1, d_2, ..., d_n}$ and wants to find the most similar sample $d_i$ to our additional sample $s$. Here $d_i$ and s are feature vectors extracted like described beforehand. All one needs in this case is proper a distance function $\phi(a,b) = x$. This can be for example the manhattan or euclidean distance. \\
-The task is then to solve
-\begin{align*}
-  \text{nearest neighbor} = \underset{x \in D}{argmin} [\phi(s,x)]
-\end{align*}
-Analogous to the above described one nearest neighbors, for the 100 nearest neighbors one would search for the 100 minimal distances.
-
-
-One can see in figure \ref{fig:VGG19} that one took the first FC layer output as our representation in this project.
-
+One can see in figure \ref{fig:VGG19} that one took the first FC layer output as our final representation in this project.
 
 \section{Nearest neighbor search}
 Nearest neighbor search is an easy algorithm to find similar items in a dataset and is used to pre-filter the matches later on. Assume one has a dataset with n items $D = {d_1, d_2, ..., d_n}$ and wants to find the most similar sample $d_i$ to our additional sample $s$. Here $d_i$ and s are feature vectors extracted like described beforehand. All one needs in this case is proper a distance function $\phi(a,b) = x$. This can be for example the manhattan or euclidean distance. \\
@@ -360,7 +338,7 @@ Now that one has the most similar and transformed image, one can just cut the mi
 The second method used is a variational autoencoder. In the following an introduction to VAEs is given and will then be extended to the use with class labels. This has the advantage one does not have to train a VAE for each class, but can use a single VAE for many classes.
 \subsubsection{Structure}
 A VAE consists out of two major parts, an \textbf{encoder} and \textbf{decoder}. The encoder takes an image as input and reduces this image into an intermediate representation. The decoder then takes this intermediate representation and tries to reconstruct the image. The simplest VAEs consist out of fully connected layers. More advanced ones use convolutional and deconvolutional layers as well. It is important that one does not use pooling layers due to pooling layers destroys image information and would result in a \textbf{much} more blurry or incorrect reconstruction. \\
-Due to one uses convolutional layers, one needs to know how to \enquote{reverse} this operation. Therefore, transposed convolution (=deconvolution) exists as introduced beforehand.
+Due to one uses convolutional layers, one needs to know how to \enquote{reverse} this operation. Therefore, transposed convolution (=deconvolution) exists as introduced beforehand. \cite{VAE}
 \subsubsection{Basic Thought}
 The main idea of VAEs is to produce the intermediate representation. This intermediate representation then later can be used to generate completely new samples. Let's denote the probability distribution of the latent variables as $p(z)$ and $p(X)$ as the distribution for the images/inputs. \\
 The intermediate representation can be seen as mean and variance of a d-dimensional normal distribution representing the image.
@@ -376,24 +354,24 @@ The final loss then is
 \begin{align*}
   Loss = KLLoss + PixelLoss
 \end{align*}
-While the pixelloss is very important for the decoder, the KLLoss is most important for the encoders output of latent variables.
+While the pixelloss is very important for the decoder, the KLLoss is most important for the encoders output of latent variables.\cite{VAE2}\cite{VAE}
 \subsubsection{Generating images}
 Now that one knows what is the main idea and how to train the VAE, one needs to know how to generate images. This is easy if one uses the reparametrization trick. Due to the output of the encoder is mean and variance, one just needs to produce d random numbers from a unit Gaussian $\epsilon$ and use the formula
 \begin{align*}
   z = \mu + \sigma \cdot \epsilon
 \end{align*}
 where $\mu$ is the mean and $\sigma$ the variance.\\
-Then z is the input for our decoder, which reconstructs our generated image.
+Then z is the input for our decoder, which reconstructs our generated image.\cite{VAE2}\cite{VAE}
 
 \subsubsection{Extension to Classes}
 Due to one has no control over class specific generation in this process, there is a simple extension to this. Let us denote X' as the reconstructed image and z as the latent variables. This decoder process is extendable to class specific generation, by adding the class label (=one hot encoded vector) to the latent vector z. Then the decoder just learns the distribution $p(X'|z,c)$ instead of  $p(X'|z)$ where c is the additional vector.\\
-The advantage is, that one does not even need to know the class. One can take a classification network and just take its softmax output as vector c while training the VAE. This gives us the ability to have a class specific generation process. Now one just needs to feed-forward the concatenated vector z and c into the decoder and an image according to the label will be generated.\\
+The advantage is, that one does not even need to know the class. One can take a classification network and just take its softmax output as vector c while training the VAE. This gives us the ability to have a class specific generation process. Now one just needs to feed-forward the concatenated vector z and c into the decoder and an image according to the label will be generated.\cite{VAEextension}\\
 This is important for later image completion, because the VAE needs to know an approximate label in the MNIST dataset, which is given by the classification network.
 
 \subsection{Deep Feature Interpolation}
 \subsubsection{Overview}
 In general one has two datasets. One not occluded image set $D_1$ and one occluded image set $D_2$.
-. According to this the overview of the algorithm is as followed.
+. According to this the overview of the algorithm is as followed. \cite{DFI}
 \begin{itemize}
 	\item Trying to complete occluded image $I_1$
 	\item Get feature vector $\sigma (I_1)$ of $I_1$
@@ -418,10 +396,11 @@ In general one has two datasets. One not occluded image set $D_1$ and one occlud
 \end{itemize}
 
 
+
 \subsubsection{Finding the Nearest Neighbors}
 The nearest neighbor search is easily done by the cosine distance similar to the image stitching approach.
 In difference to image stitching one just uses the cosine distance with normalized feature vectors and no additional pixel difference.\\
-Now one just needs the feature vector of our image and find its 100 nearest neighbors (=the least distances) \textbf{for each of the two sets}.
+Now one just needs the feature vector of our image and find its 100 nearest neighbors (=the least distances) \textbf{for each of the two sets}.\cite{DFI}
 
 \subsubsection{Difference Vector}
 After one computed the 100 nearest neighbors, one needs to extract the difference vector between the two datasets.
@@ -439,7 +418,7 @@ and added to the image one wants to manipulate by a weighting factor $\alpha$.
   \sigma_{toReconstruct} &= \sigma (I_1) + \alpha \cdot \sigma_{diff}\\
   \alpha &= \frac{\beta}{\frac{1}{d} w \cdot w}\\
   \beta &= 0.4
-\end{align*}
+\end{align*}\cite{DFI}
 \subsubsection{Image Reconstruction}
 Now that one has the manipulated feature vector $\sigma_{I_1}$ which now contains our completed image in feature vector form, one needs to transform this into an image again. This can be done by inverting the neural network. First a black image is fed forward. Then the feature vector $\sigma_{black}$ for the initially black image is extracted. Afterwards one computes the loss
 \begin{align*}
@@ -455,7 +434,7 @@ This makes the final loss look like the following
 \begin{align*}
   Loss = \frac{1}{2} ||\sigma_{toReconstruct} - \sigma_{black}||_2^2 + \lambda R_V
 \end{align*}
-where $\lambda$ is an additional image smoothing factor and $\beta = 0.4$ like beforehand.
+where $\lambda$ is an additional image smoothing factor and $\beta = 0.4$ like beforehand.\cite{DFI}
 
 
 
@@ -468,11 +447,12 @@ In this project three datasets were used.
 \begin{itemize}
   \item MNIST \\
   A handwritten digit dataset. The digits are normalized, mostly center and transformed into grayscale.
-  The image size is 28x28 and the dataset has ten classes (= one for each digit). In this dataset 60.000 training and 10.000 are available.
+  The image size is 28x28 and the dataset has ten classes (= one for each digit). In this dataset 60.000 training and 10.000 are available. \cite{MNIST}
   \item Labeled faces in the wild (=LFW)\\
-  LFW is a face dataset with aligned faces. They are labeled with the person they are displaying, which is more or less unimportant for this work. The dataset is just treated unlabeled. The dataset contains 13233 images.
+  LFW is a face dataset with aligned faces. They are labeled with the person they are displaying, which is more or less unimportant for this work. The dataset is just treated unlabeled. The dataset contains 13233 images.\cite{LFW1}\cite{LFW2}\cite{LFW3}\cite{LFW4}
   \item CIFAR 10
-  The CIFAR 10 dataset is dataset contain 10 classe. The 10 classes are: airplane, automobile, bird, cat, deer, dog, frog, horse, ship, truck. The dataset contains 50000 training images and 10000 test images, which are of size 32x32 in RGB mode.
+  The CIFAR 10 dataset is dataset contain 10 classe. The 10 classes are: airplane, automobile, bird, cat, deer, dog, frog, horse, ship, truck. The dataset contains 50000 training images and 10000 test images, which are of size 32x32 in RGB mode. \\
+  \textbf{Due to the results were very bad and did not work properly, this dataset was only tried out in the code.} The bad results may be due to very different colors and shapes of the classes internally.\cite{CIFAR10}
 \end{itemize}
 
 \subsection{Structures of networks}
@@ -481,7 +461,7 @@ Due to many networks are used, here the network architectures are introduced.
 \begin{figure}[H]
   \begin{center}
     \includegraphics[width=0.5\textwidth]{images/mnist_convet.png}
-    \caption{A convolutional neural network to classify MNIST digits.}
+    \caption{A convolutional neural network to classify MNIST digits.\cite{MNISTclassify}}
   \end{center}
 \end{figure}
 \subsubsection{VAE on MNIST}
@@ -502,13 +482,13 @@ The layer structure is
 \begin{figure}[H]
   \begin{center}
     \includegraphics[width=0.5\textwidth]{images/cifar10_encoder.png}
-    \caption{The encoder of the VAE for the LFW dataset.}
+    \caption{The encoder of the VAE for the LFW dataset.\cite{decEncCIFAR10}}
   \end{center}
 \end{figure}
 \begin{figure}[H]
   \begin{center}
     \includegraphics[width=0.5\textwidth]{images/cifar10_decoder.png}
-    \caption{The decoder of the VAE for the LFW dataset.}
+    \caption{The decoder of the VAE for the LFW dataset.\cite{decEncCIFAR10}}
   \end{center}
 \end{figure}
 
@@ -516,7 +496,7 @@ The layer structure is
 \begin{figure}[H]
   \begin{center}
     \includegraphics[width=0.5\textwidth]{images/VGG19-orig.png}
-    \caption{The VGG-19 network.}
+    \caption{The VGG-19 network.\cite{VGG19}}
   \end{center}
 \end{figure}
 
@@ -625,8 +605,7 @@ The results are the following:
     \end{center}
   \end{figure}
 \subsection{Comparison}
-While the image stitching and VAE approach perform very well on the MNIST dataset, they more often fail on the LFW dataset. On the LFW dataset the DFI approach is the best solution, while we get some grayish parts due to pollution of the difference vector on the MNIST dataset. This may be fixed with a better feature representation of the MNSIT digits while the NN search.
-\cite{dummyEntry}
+While the image stitching and VAE approach perform very well on the MNIST dataset, they more often fail on the LFW dataset. On the LFW dataset the DFI approach is the best solution, while we get some grayish parts due to pollution of the difference vector on the MNIST dataset. This may be fixed with a better feature representation of the MNIST digits while the NN search.
 
 
 % References (Literaturverzeichnis):
@@ -634,8 +613,12 @@ While the image stitching and VAE approach perform very well on the MNIST datase
 \newpage
 \addcontentsline{toc}{section}{Literature}
 % b) Style (with abbreviations: use alpha):
-\bibliographystyle{plainnat-d}
-% c) The File:
-\bibliography{seminararbeit}
+%\bibliographystyle{plainnat-d}
+
+% d) the splitted bibs
+\printbibheading
+\printbibliography[keyword=image, title={Image Resources}]
+\newpage
+\printbibliography[keyword=text, title={Text Resources}]
 
 \end{document}
